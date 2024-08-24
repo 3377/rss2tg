@@ -5,11 +5,8 @@
 > ***支持AMD64/ARM64*** <br>
 > ***镜像大小17M，内存占用10M*** <br>
 >  **——By [drfyup](https://hstz.com)**
-#效果图
-![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
-
-
 #
+
 ## 1. 部署方法
 
 ### 1.1 使用 Docker Compose（推荐）
@@ -195,3 +192,6 @@ docker logs rss2tg
 ```
 
 如有其他问题，请参考项目的 GitHub 页面或提交 issue。
+#贴上一张效果图
+效果图
+![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
