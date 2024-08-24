@@ -1,20 +1,27 @@
 # RSS to Telegram Bot 使用文档
--- 简称rss2tg
--- 用于自定义RSS地址，自定义筛选字段，在自定义时间里有相关帖子即发送到自定义TG用户或频道。
+**简称rss2tg，用于将自定义RSS地址，字段，刷新时间里的相关帖子即时发送到自定义TG用户或频道，省去你刷帖子的时间。**
+**支持AMD64/ARM64**
+**镜像大小17M，内存占用10M**
+**——By [drfyup](https://hstz.com)**
+
 
 ## 1. 部署方法
 
 ### 1.1 使用 Docker Compose（推荐）
 
-1. 确保已安装 Docker 和 Docker Compose。
+1. 确保已安装 Docker 和 Docker Compose（方法自寻）。
 
 2. 克隆或下载项目代码到本地。
+
+```
+git clone https://github.com/3377/rss2tg.git
+```
 
 3. 进入项目目录。
 
 4. 编辑 `docker-compose.yml` 文件，修改环境变量：
 
--- 进入任意目录，新建docker-compose.yml文件，填入以下内容
+-- 进入任意目录或直接当前目录，新建docker-compose.yml文件，填入以下内容
 
 ```
 version: '3'
@@ -46,7 +53,7 @@ docker-compose up  -d
 1. 构建 Docker 镜像：
 
 ```bash
-docker build -t rss2tg .
+docker pull drfyup/rss2tg:latest
 ```
 
 2. 运行 Docker 容器：
@@ -61,7 +68,7 @@ docker run -d \
   -e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  rss2tg
+  drfyup/rss2tg:latest
 ```
 
 请替换环境变量中的相应值。
@@ -84,7 +91,7 @@ telegram:
   channels:
     - "@channel_1"
     - "@channel_2"
-
+#这里的tg配置优先级低于环境变量，如果填在这里，一分钟后才会读取此配置
 rss:
   - url: "https://example.com/feed1.xml"
     interval: 300
@@ -99,7 +106,7 @@ rss:
     group: "Group2"
 ```
 
-### 2.2 Bot 命令
+### 2.2 Bot 使用方法及命令
 
 Bot 支持以下命令：
 
@@ -114,11 +121,37 @@ Bot 支持以下命令：
 
 ### 2.3 添加 RSS 订阅
 
+#### 方式一
+
 1. 发送 `/add` 命令给 Bot。
 2. 按提示输入 RSS 订阅的 URL。
 3. 输入更新间隔（秒）。
 4. 输入关键词（用逗号分隔，如果没有可以直接输入 1）。
 5. 输入组名。
+
+#### 方式二
+
+在当前config目录下新建config.ymal，填入以下内容。
+
+```
+rss:
+- url: https://rss.nodeseek.com
+  interval: 30
+  keywords:
+  - vps
+  - 甲骨文
+  - 免费
+  group: NS论坛
+- url: https://linux.do/latest.rss
+  interval: 30
+  keywords:
+  - vps
+  - 甲骨文
+  - 免费
+  - 龟壳
+  group: LC论坛
+```
+***两种方式都可以，系统会每1分钟自动检测，即使动态更改生效。***
 
 ### 2.4 编辑 RSS 订阅
 
