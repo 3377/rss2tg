@@ -13,7 +13,7 @@
 
 2. 克隆或下载项目代码到本地。
 
-```
+```bash
 git clone https://github.com/3377/rss2tg.git
 ```
 
@@ -23,7 +23,7 @@ git clone https://github.com/3377/rss2tg.git
 
 -- 进入任意目录或直接当前目录，新建docker-compose.yml文件，填入以下内容
 
-```
+```yaml
 version: '3'
 services:
   rss2tg:
@@ -44,7 +44,7 @@ services:
 
 5. 运行以下命令启动容器：
 
-```bash
+```yaml
 docker-compose up  -d
 ```
 
@@ -52,13 +52,13 @@ docker-compose up  -d
 
 1. 构建 Docker 镜像：
 
-```bash
+```yaml
 docker pull drfyup/rss2tg:latest
 ```
 
 2. 运行 Docker 容器：
 
-```bash
+```yaml
 docker run -d \
   --name rss2tg \
   -v $(pwd)/config:/app/config \
@@ -133,7 +133,7 @@ Bot 支持以下命令：
 
 在当前config目录下新建config.ymal，填入以下内容。
 
-```
+```yaml
 rss:
 - url: https://rss.nodeseek.com
   interval: 30
