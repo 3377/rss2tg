@@ -1,0 +1,20 @@
+telegram:
+  bot_token: 填入你的tg token
+  users:
+    - "填入你的tg id"
+  channels:
+    - ""
+  ##以下为示例，可随意更改。
+rss:
+  - url: https://rss.nodeseek.com
+    interval: 30
+    keywords:
+      - 便宜
+      - 手机
+    group: NS论坛
+  - url: https://linux.do/latest.rss
+    interval: 30
+    keywords:
+      - api
+      - 免费
+    group: DO论坛
