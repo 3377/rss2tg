@@ -44,8 +44,8 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+            # ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+           # ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}  使用时放tgs下面
           tags: |
-           # ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-           # ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
