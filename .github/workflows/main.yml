@@ -46,7 +46,14 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤6: 构建并推送 Docker 镜像
+      # 新步骤: 登录到 DockerHub
+      - name: 登录到 DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 步骤6: 构建并推送 Docker 镜像到 GitHub Container Registry 和 DockerHub
       - name: 构建并推送
         uses: docker/build-push-action@v2
         with:
@@ -56,3 +63,5 @@ jobs:
           tags: |  # 定义镜像标签
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}
