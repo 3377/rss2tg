@@ -7,8 +7,8 @@ services:
       - ./config:/app/config
       - ./data:/app/data
     environment:
-      - TELEGRAM_BOT_TOKEN=tg bot token
-      - TELEGRAM_USERS=tg user id
-      - TELEGRAM_CHANNELS=tg channel id
+      - TELEGRAM_BOT_TOKEN=
+      - TELEGRAM_USERS=
+      - TELEGRAM_CHANNELS=
       - TZ=Asia/Shanghai
     restart: unless-stopped
