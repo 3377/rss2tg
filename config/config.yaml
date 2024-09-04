@@ -1,5 +1,5 @@
 telegram:
-  bot_token: 填入你的tg token
+  bot_token: ""
   users:
     - "填入你的tg id"
   channels:
