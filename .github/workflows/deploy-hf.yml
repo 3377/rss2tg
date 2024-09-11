@@ -1,4 +1,4 @@
-name: Deploy to Hugging Face Spaces
+name: Deploy Docker Image to Hugging Face Spaces
 
 on:
   workflow_dispatch:
@@ -11,13 +11,31 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: pip install --upgrade huggingface_hub
+
     - name: Deploy to Hugging Face Spaces
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        SPACE_ID: your_hf_space_id
+        SPACE_ID: ${{ secrets.SPACE_ID }} # 替换为你的Space ID，例如 `username/my-space`
       run: |
-        # 安装 Hugging Face hub CLI 工具
-        pip install huggingface_hub
-
-        # 将指定的镜像推送到Hugging Face
-        huggingface-cli space deploy --docker-image drfyup/rss2tg:latest $SPACE_ID --token $HF_TOKEN
+        python -c "
+        from huggingface_hub import HfApi
+        api = HfApi()
+        api.create_repo(repo_id='${{ env.SPACE_ID }}', repo_type='space', token='${{ secrets.HF_TOKEN }}')
+        api.upload_file(
+            path_or_fileobj='Dockerfile',
+            path_in_repo='Dockerfile',
+            repo_id='${{ env.SPACE_ID }}',
+            repo_type='space',
+            token='${{ secrets.HF_TOKEN }}'
+        )
+        "
+    - name: Create and upload Dockerfile
+      run: |
+        echo 'FROM drfyup/rss2tg:latest' > Dockerfile
