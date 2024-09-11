@@ -23,5 +23,5 @@ jobs:
 
     - name: Build and Push Docker image
       run: |
-        docker build -t huggingface.co/drfy/rss2tg .
-        docker push huggingface.co/drfy/rss2tg
+        docker build -t huggingface.co/spaces/drfy/rss2tg .
+        docker push huggingface.co/spaces/drfy/rss2tg
