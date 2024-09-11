@@ -19,11 +19,11 @@ jobs:
     - name: Install Python dependencies
       run: pip install --upgrade huggingface_hub
 
-    - name: Create and upload Dockerfile
+    - name: Create Dockerfile
       run: |
         echo 'FROM drfyup/rss2tg:latest' > Dockerfile
     
-    - name: Deploy to Hugging Face Spaces
+    - name: Upload Dockerfile to Hugging Face Spaces
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         SPACE_ID: drfy/rss2tg  # 替换为你的Space ID，例如 `username/my-space`
@@ -31,12 +31,6 @@ jobs:
         python -c "
         from huggingface_hub import HfApi
         api = HfApi()
-        api.create_repo(
-            repo_id='${{ env.SPACE_ID }}',
-            repo_type='space',
-            token='${{ secrets.HF_TOKEN }}',
-            space_sdk='docker'
-        )
         api.upload_file(
             path_or_fileobj='Dockerfile',
             path_in_repo='Dockerfile',
