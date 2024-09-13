@@ -1,5 +1,5 @@
-[English](#English) | [简体中文](#简体中文) 
-# 简体中文
+[English](#English) | [简体中文](#简体中文文档)
+# 简体中文文档
 # RSS to Telegram Bot 使用文档
 
 #
