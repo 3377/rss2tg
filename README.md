@@ -1,4 +1,8 @@
-<h1 align="center">[English](# English Version) | [简体中文](#RSS to Telegram Bot 使用文档)</h1>
+<table>
+  <tr>
+    <td align="center">[English](# English Version) | [简体中文](#RSS to Telegram Bot 使用文档)</td>
+  </tr>
+</table>
 
 # RSS to Telegram Bot 使用文档
 
