@@ -1,4 +1,6 @@
-[English](# English Version) | [简体中文](# RSS to Telegram Bot 使用文档)
+# RSS to Telegram Bot 使用文档
+
+[English](#english-version) | [简体中文](#rss-to-telegram-bot-使用文档)
 # RSS to Telegram Bot 使用文档
 
 #
