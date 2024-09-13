@@ -170,7 +170,7 @@ rss:
 
 Send the `/list' command to the Bot to view all current RSS feeds.
 
-###2.7 View push statistics
+### 2.7 View push statistics
 
 Send the `/statistics' command to the Bot to check the number of pushes for today and this week.
 
