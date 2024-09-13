@@ -21,9 +21,9 @@ git clone https://github.com/3377/rss2tg.git
 
 3. Enter the project directory.
 
-4. Edit`docker-compose.yml' file, modify environment variables：
+4. Edit 'docker-compose.yml' file, modify environment variables：
 
---Enter any directory or directly the current directory and create a new docker-compose.yml file, fill in the following content
+-- Enter any directory or directly the current directory and create a new docker-compose.yml file, fill in the following content
 
 ```yaml
 version: '3'
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 ```
 
-Replace `your_bot_token_here` with your Telegram Bot Token, `user_id_1, user_id_2` with the user ID you want to receive the message, and `@channel_1, @channel_2` with the channel name you want to send the message.
+Replace `your_bot_token_here` with your Telegram Bot Token, `user_id_1, user_id_2` with the user ID you want to receive the message, and `@channel_1, @channel_2` with the channel name you want to send the message, `TZ=Asia/Shanghai` with your timezone settings.
 
 5. Run the following command to start the container：
 
