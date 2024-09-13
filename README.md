@@ -9,7 +9,7 @@
 
 ## 1. Deployment method
 
-###1.1 Use Docker Compose (recommended)
+### 1.1 Use Docker Compose (recommended)
 
 1. Make sure that Docker and Docker Compose are installed (the method is self-searching).
 
@@ -50,7 +50,7 @@ Replace `your_bot_token_here` with your Telegram Bot Token, `user_id_1, user_id_
 docker-compose up  -d
 ```
 
-###1.2 Use Docker Run
+### 1.2 Use Docker Run
 
 1. Build a Docker image：
 
@@ -77,7 +77,7 @@ Please replace the corresponding value in the environment variable.
 
 ## 2. Program instructions
 
-###2.1 Configuration file
+### 2.1 Configuration file
 
 The program supports configuration through YAML configuration files or environment variables.The configuration file is located in`/app/config/config.yaml`.If the file does not exist, the program will use environment variables for initial configuration.
 The reading priority of environment variables is higher than that of configuration files.
@@ -108,7 +108,7 @@ rss:
     group: "Group2"
 ```
 
-###2.2 How to use Bot and commands
+### 2.2 How to use Bot and commands
 
 The Bot supports the following commands：
 
@@ -121,7 +121,7 @@ The Bot supports the following commands：
 -`/list`-list all RSS feeds
 -`/statistics`-View push statistics
 
-###2.3 Add RSS feed
+### 2.3 Add RSS feed
 
 #### Method One
 
@@ -155,18 +155,18 @@ rss:
 ```
 ***Both methods are possible, the system will automatically detect every 1 minute, even if the dynamic changes take effect.***
 
-###2.4 Edit RSS feed
+### 2.4 Edit RSS feed
 
 1. Send the `/edit' command to the Bot.
 2. Enter the RSS subscription number you want to edit.
 3. Follow the prompts to modify the URL, update interval, keywords, and group name.If you don't need to modify an item, enter 1 directly.
 
-###2.5 Delete RSS feed
+### 2.5 Delete RSS feed
 
 1. Send the `/delete' command to the Bot.
 2. Enter the RSS subscription number you want to delete.
 
-###2.6 View subscription list
+### 2.6 View subscription list
 
 Send the `/list' command to the Bot to view all current RSS feeds.
 
