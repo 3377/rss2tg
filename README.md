@@ -1,5 +1,5 @@
-[English](#English) | [简体中文](#简体中文文档)
-# 简体中文文档
+<h1 align="center">[English](# English Version) | [简体中文](#RSS to Telegram Bot 使用文档)</h1>
+
 # RSS to Telegram Bot 使用文档
 
 #
@@ -203,7 +203,7 @@ docker logs rss2tg
 
 ![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
 
-# English
+# English Version
 # RSS to Telegram Bot usage documentation
 #
 > [!TIP]
