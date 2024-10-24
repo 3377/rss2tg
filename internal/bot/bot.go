@@ -386,25 +386,49 @@ func (b *Bot) UpdateConfig(cfg *config.Config) {
 }
 
 func (b *Bot) handleVersion(chatID int64) {
-    // 从配置目录读取当前版本
+    // 获取当前版本
     currentVersion, err := b.getCurrentVersion()
     if err != nil {
         b.sendMessage(chatID, fmt.Sprintf("获取当前版本失败：%v", err))
         return
     }
-    
-    message := fmt.Sprintf("当前版本：%s", currentVersion)
+
+    // 获取最新版本
+    latestVersion, err := b.getLatestVersion()
+    if err != nil {
+        b.sendMessage(chatID, fmt.Sprintf("获取最新版本失败：%v", err))
+        return
+    }
+
+    // 发送版本信息
+    message := fmt.Sprintf("当前版本：%s\n最新版本：%s", currentVersion, latestVersion)
     b.sendMessage(chatID, message)
 }
 
 func (b *Bot) getCurrentVersion() (string, error) {
-    // 从配置目录读取version文件
     versionFile := "/app/config/version"
     content, err := os.ReadFile(versionFile)
     if err != nil {
         return "", fmt.Errorf("读取版本文件失败: %v", err)
     }
-    
     return strings.TrimSpace(string(content)), nil
 }
 
+func (b *Bot) getLatestVersion() (string, error) {
+    resp, err := http.Get("https://raw.githubusercontent.com/3377/rss2tg/refs/heads/main/version")
+    if err != nil {
+        return "", fmt.Errorf("无法获取最新版本: %v", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return "", fmt.Errorf("获取最新版本失败，状态码: %d", resp.StatusCode)
+    }
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return "", fmt.Errorf("读取最新版本内容失败: %v", err)
+    }
+
+    return strings.TrimSpace(string(body)), nil
+}
