@@ -5,6 +5,7 @@ import (
     "io"
     "log"
     "net/http"
+    "os"
     "strconv"
     "strings"
     "time"
@@ -14,9 +15,6 @@ import (
     "rss2telegram/internal/storage"
     "rss2telegram/internal/stats"
 )
-
-// 添加版本常量
-const currentVersion = "v1.0.0" // 当前版本号
 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 
@@ -136,7 +134,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     chinaLoc, _ := time.LoadLocation("Asia/Shanghai")
     pubDateChina := pubDate.In(chinaLoc)
     
-    // 将匹配的关键词加粗
+    // 将匹配的关键词粗
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
         boldKeywords[i] = "*" + keyword + "*"
@@ -219,17 +217,15 @@ func (b *Bot) handleAdd(chatID int64, userID int64) {
 
 func (b *Bot) handleEdit(chatID int64, userID int64) {
     b.userState[userID] = "edit_index"
-    message := "当前RSS订阅列表:\n"
-    message += b.listSubscriptions()
-    message += "\n请输入要编辑的RSS订阅编号："
+    // 去掉重复的订阅列表显示
+    message := "请输入要编辑的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
-    message := "当前RSS订阅列表:\n"
-    message += b.listSubscriptions()
-    message += "\n请输入要删除的RSS订阅编号："
+    // 去掉重复的订阅列表显示
+    message := "请输入要删除的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
 
@@ -390,29 +386,25 @@ func (b *Bot) UpdateConfig(cfg *config.Config) {
 }
 
 func (b *Bot) handleVersion(chatID int64) {
-    // 获取最新版本信息
-    latestVersion, err := b.getLatestVersion()
+    // 从配置目录读取当前版本
+    currentVersion, err := b.getCurrentVersion()
     if err != nil {
-        b.sendMessage(chatID, fmt.Sprintf("当前版本：%s\n获取最新版本失败：%v", currentVersion, err))
+        b.sendMessage(chatID, fmt.Sprintf("获取当前版本失败：%v", err))
         return
     }
     
-    message := fmt.Sprintf("当前版本：%s\n最新版本：%s", currentVersion, latestVersion)
+    message := fmt.Sprintf("当前版本：%s", currentVersion)
     b.sendMessage(chatID, message)
 }
 
-func (b *Bot) getLatestVersion() (string, error) {
-    resp, err := http.Get("https://raw.githubusercontent.com/3377/rss2tg/refs/heads/main/version")
+func (b *Bot) getCurrentVersion() (string, error) {
+    // 从配置目录读取version文件
+    versionFile := "/app/config/version"
+    content, err := os.ReadFile(versionFile)
     if err != nil {
-        return "", fmt.Errorf("获取最新版本失败: %v", err)
-    }
-    defer resp.Body.Close()
-    
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return "", fmt.Errorf("读取版本信息失败: %v", err)
+        return "", fmt.Errorf("读取版本文件失败: %v", err)
     }
     
-    return strings.TrimSpace(string(body)), nil
+    return strings.TrimSpace(string(content)), nil
 }
 

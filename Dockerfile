@@ -26,6 +26,9 @@ COPY --from=builder /build/bot /app/bot
 # 创建必要的目录
 RUN mkdir -p /app/config /app/data
 
+# 复制version文件到config目录
+COPY version /app/config/version
+
 # 复制entrypoint脚本
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
