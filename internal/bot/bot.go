@@ -209,24 +209,21 @@ func (b *Bot) handleConfig(chatID int64) {
 
 func (b *Bot) handleAdd(chatID int64, userID int64) {
     b.userState[userID] = "add_url"
-    message := "当前RSS订阅列表:\n" // 初始化 message 变量
-    message += b.listSubscriptions()
+    message := b.listSubscriptions()
     message += "\n请输入要添加的RSS订阅URL："
     b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleEdit(chatID int64, userID int64) {
     b.userState[userID] = "edit_index"
-    message := "当前RSS订阅列表:\n" // 初始化 message 变量
-    message += b.listSubscriptions()
+    message := b.listSubscriptions()
     message += "\n请输入要编辑的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
-    message := "当前RSS订阅列表:\n" // 初始化 message 变量
-    message += b.listSubscriptions()
+    message := b.listSubscriptions()
     message += "\n请输入要删除的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
