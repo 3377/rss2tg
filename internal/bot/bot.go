@@ -2,7 +2,9 @@ package bot
 
 import (
     "fmt"
+    "io"
     "log"
+    "net/http"
     "strconv"
     "strings"
     "time"
@@ -12,6 +14,9 @@ import (
     "rss2telegram/internal/storage"
     "rss2telegram/internal/stats"
 )
+
+// 添加版本常量
+const currentVersion = "v1.0.0" // 当前版本号
 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 
@@ -76,6 +81,7 @@ func (b *Bot) Start() {
         {Command: "delete", Description: "删除RSS订阅"},
         {Command: "list", Description: "列出所有RSS订阅"},
         {Command: "stats", Description: "查看推送统计"},
+        {Command: "version", Description: "获取当前版本信息"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -115,6 +121,8 @@ func (b *Bot) Start() {
                 b.handleList(chatID)
             case "stats":
                 b.handleStats(chatID)
+            case "version":
+                b.handleVersion(chatID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /help 查看可用命令。")
             }
@@ -188,7 +196,8 @@ func (b *Bot) handleHelp(chatID int64) {
 /edit - 编辑RSS订阅
 /delete - 删除RSS订阅
 /list - 列出所有RSS订阅
-/stats - 查看推送统计`
+/stats - 查看推送统计
+/version - 获取当前版本信息`
     b.sendMessage(chatID, helpText)
 }
 
@@ -378,5 +387,32 @@ func (b *Bot) getStats() string {
 
 func (b *Bot) UpdateConfig(cfg *config.Config) {
     b.config = cfg
+}
+
+func (b *Bot) handleVersion(chatID int64) {
+    // 获取最新版本信息
+    latestVersion, err := b.getLatestVersion()
+    if err != nil {
+        b.sendMessage(chatID, fmt.Sprintf("当前版本：%s\n获取最新版本失败：%v", currentVersion, err))
+        return
+    }
+    
+    message := fmt.Sprintf("当前版本：%s\n最新版本：%s", currentVersion, latestVersion)
+    b.sendMessage(chatID, message)
+}
+
+func (b *Bot) getLatestVersion() (string, error) {
+    resp, err := http.Get("https://raw.githubusercontent.com/3377/rss2tg/refs/heads/main/version")
+    if err != nil {
+        return "", fmt.Errorf("获取最新版本失败: %v", err)
+    }
+    defer resp.Body.Close()
+    
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return "", fmt.Errorf("读取版本信息失败: %v", err)
+    }
+    
+    return strings.TrimSpace(string(body)), nil
 }
 
