@@ -122,7 +122,7 @@ func (b *Bot) Start() {
             case "version":
                 b.handleVersion(chatID)
             default:
-                b.sendMessage(chatID, "未知命令，请使用 /help 查看可用命令。")
+                b.sendMessage(chatID, "未知命令，请使用 /help ��看可用命令。")
             }
         } else {
             b.handleUserInput(update.Message)
@@ -209,7 +209,7 @@ func (b *Bot) handleConfig(chatID int64) {
 
 func (b *Bot) handleAdd(chatID int64, userID int64) {
     b.userState[userID] = "add_url"
-    message := "当前RSS订阅列表:\n"
+   // message := "当前RSS订阅列表:\n"
     message += b.listSubscriptions()
     message += "\n请输入要添加的RSS订阅URL："
     b.sendMessage(chatID, message)
@@ -217,15 +217,17 @@ func (b *Bot) handleAdd(chatID int64, userID int64) {
 
 func (b *Bot) handleEdit(chatID int64, userID int64) {
     b.userState[userID] = "edit_index"
-    // 去掉重复的订阅列表显示
-    message := "请输入要编辑的RSS订阅编号："
+ //   message := "当前RSS订阅列表:\n"
+    message += b.listSubscriptions()
+    message += "\n请输入要编辑的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
-    // 去掉重复的订阅列表显示
-    message := "请输入要删除的RSS订阅编号："
+  //  message := "当前RSS订阅列表:\n"
+    message += b.listSubscriptions()
+    message += "\n请输入要删除的RSS订阅编号："
     b.sendMessage(chatID, message)
 }
 
@@ -278,7 +280,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         if err := b.config.Save(b.configFile); err != nil {
             b.sendMessage(chatID, "添加订阅成功，但保存配置失败。")
         } else {
-            b.sendMessage(chatID, "成功添加RSS订阅。")
+            b.sendMessage(chatID, "成功添加RSS订���。")
             b.updateRSSHandler()
         }
     case "edit_index":
