@@ -202,17 +202,26 @@ func (b *Bot) handleConfig(chatID int64) {
 
 func (b *Bot) handleAdd(chatID int64, userID int64) {
     b.userState[userID] = "add_url"
-    b.sendMessage(chatID, "请输入要添加的RSS订阅URL：")
+    message := "当前RSS订阅列表:\n"
+    message += b.listSubscriptions()
+    message += "\n请输入要添加的RSS订阅URL："
+    b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleEdit(chatID int64, userID int64) {
     b.userState[userID] = "edit_index"
-    b.sendMessage(chatID, "请输入要编辑的RSS订阅编号：")
+    message := "当前RSS订阅列表:\n"
+    message += b.listSubscriptions()
+    message += "\n请输入要编辑的RSS订阅编号："
+    b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
-    b.sendMessage(chatID, "请输入要删除的RSS订阅编号：")
+    message := "当前RSS订阅列表:\n"
+    message += b.listSubscriptions()
+    message += "\n请输入要删除的RSS订阅编号："
+    b.sendMessage(chatID, message)
 }
 
 func (b *Bot) handleList(chatID int64) {
@@ -250,10 +259,10 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         }
         b.config.RSS[len(b.config.RSS)-1].Interval = interval
         b.userState[userID] = "add_keywords"
-        b.sendMessage(chatID, "请输入关键词（用逗号分隔，如果没有可以直接输入1）：")
+        b.sendMessage(chatID, "请输入关键词（用空格分隔，如果没有可以直接输入1）：")
     case "add_keywords":
         if text != "1" {
-            keywords := strings.Split(text, ",")
+            keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
             b.config.RSS[len(b.config.RSS)-1].Keywords = keywords
         }
         b.userState[userID] = "add_group"
@@ -311,11 +320,12 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Interval = interval
             }
             b.userState[userID] = fmt.Sprintf("edit_keywords_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用逗号分隔，如不修改请输入1）：", b.config.RSS[index].Keywords))
+            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用空格分隔，如不修改请输入1）：", b.config.RSS[index].Keywords))
         } else if strings.HasPrefix(b.userState[userID], "edit_keywords_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_keywords_"))
             if text != "1" {
-                b.config.RSS[index].Keywords = strings.Split(text, ",")
+                keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
+                b.config.RSS[index].Keywords = keywords
             }
             b.userState[userID] = fmt.Sprintf("edit_group_%d", index)
             b.sendMessage(chatID, fmt.Sprintf("当前组名为：%s\n请输入新的组名（如不修改请输入1）：", b.config.RSS[index].Group))
@@ -369,3 +379,4 @@ func (b *Bot) getStats() string {
 func (b *Bot) UpdateConfig(cfg *config.Config) {
     b.config = cfg
 }
+
