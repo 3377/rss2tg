@@ -12,9 +12,14 @@ RUN go mod download
 
 # 复制源代码并构建
 COPY . .
-RUN go mod tidy && \
-    mkdir -p config && \
-    cp version config/version && \
+# 确保version文件存在并复制到正确位置
+RUN mkdir -p config && \
+    if [ -f version ]; then \
+    cp version config/version; \
+    else \
+    echo "1.0.0" > config/version; \
+    fi && \
+    go mod tidy && \
     go build -ldflags="-w -s" -o bot
 
 # 运行阶段
@@ -22,18 +27,19 @@ FROM alpine:latest
 
 WORKDIR /app
 
-# 从builder阶段复制编译好的二进制文件
-COPY --from=builder /build/bot /app/bot
-
-# 创建必要的目录
+# 创建必要的目录并复制文件
 RUN mkdir -p /app/config /app/data
 
-# 复制version文件到config目录（从构建阶段复制）
+# 从builder阶段复制文件
+COPY --from=builder /build/bot /app/bot
 COPY --from=builder /build/config/version /app/config/version
-
-# 复制entrypoint脚本
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+
+# 设置文件权限
+RUN chmod +x /app/entrypoint.sh /app/bot && \
+    # 确保version文件存在且有正确的权限
+    touch /app/config/version && \
+    chmod 644 /app/config/version
 
 # 安装运行时依赖和时区数据
 RUN apk add --no-cache ca-certificates tzdata
@@ -41,5 +47,6 @@ RUN apk add --no-cache ca-certificates tzdata
 # 设置时区
 ENV TZ=Asia/Shanghai
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# 使用shell形式的ENTRYPOINT以确保正确的权限和路径
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/entrypoint.sh"]
 CMD ["/app/bot"]
