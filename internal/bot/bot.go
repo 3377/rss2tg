@@ -75,6 +75,14 @@ func (b *Bot) Start() {
         {Command: "view", Description: "查看类命令"},
         {Command: "edit", Description: "编辑类命令"},
         {Command: "stats", Description: "推送统计"},
+        {Command: "config", Description: "查看当前配置"},
+        {Command: "list", Description: "列出所有RSS订阅"},
+        {Command: "version", Description: "获取当前版本信息"},
+        {Command: "add", Description: "添加RSS订阅"},
+        {Command: "edit", Description: "编辑RSS订阅"},
+        {Command: "delete", Description: "删除RSS订阅"},
+        {Command: "add_all", Description: "向所有订阅添加关键词"},
+        {Command: "del_all", Description: "从所有订阅删除关键词"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -106,6 +114,20 @@ func (b *Bot) Start() {
                 b.handleView(chatID, userID)
             case "edit":
                 b.handleEditCommand(chatID, userID)
+            case "config":
+                b.handleConfig(chatID)
+            case "list":
+                b.handleList(chatID)
+            case "version":
+                b.handleVersion(chatID)
+            case "add":
+                b.handleAdd(chatID, userID)
+            case "delete":
+                b.handleDelete(chatID, userID)
+            case "add_all":
+                b.handleAddAll(chatID, userID)
+            case "del_all":
+                b.handleDelAll(chatID, userID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -140,7 +162,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         if _, err := b.api.Send(msg); err != nil {
             log.Printf("发送消息给用户 %d 失败: %v", userID, err)
         } else {
-            log.Printf("成功��送消息给用户 %d", userID)
+            log.Printf("成功发送消息给用户 %d", userID)
             b.stats.IncrementMessageCount()
         }
     }
@@ -177,43 +199,39 @@ func (b *Bot) handleStart(chatID int64) {
 /view - 查看类命令合集
 /edit - 编辑类命令合集
 
-查看类命令（使用 /view 选择）：
-1 - 查看当前配置
-2 - 查看推送统计
-3 - 列出所有RSS订阅
-4 - 获取当前版本信息
+查看类命令（使用 /view 查看）：
+/config - 查看当前配置
+/list - 列出所有RSS订阅
+/stats - 查看推送统计
+/version - 获取当前版本信息
 
-编辑类命令（使用 /edit 选择）：
-1 - 添加RSS订阅
-2 - 编辑RSS订阅
-3 - 删除RSS订阅
-4 - 向所有订阅添加关键词
-5 - 从所有订阅删除关键词`
+编辑类命令（使用 /edit 查看）：
+/add - 添加RSS订阅
+/edit - 编辑RSS订阅
+/delete - 删除RSS订阅
+/add_all - 向所有订阅添加关键词
+/del_all - 从所有订阅删除关键词`
     b.sendMessage(chatID, helpText)
 }
 
 func (b *Bot) handleView(chatID int64, userID int64) {
-    text := `请选择要执行的查看命令：
-1 - 查看当前配置
-2 - 查看推送统计
-3 - 列出所有RSS订阅
-4 - 获取当前版本信息
+    text := `查看类命令列表：
 
-请输入命令编号（1-4）：`
-    b.userState[userID] = "view_command"
+/config - 查看当前配置
+/list - 列出所有RSS订阅
+/stats - 查看推送统计
+/version - 获取当前版本信息`
     b.sendMessage(chatID, text)
 }
 
 func (b *Bot) handleEditCommand(chatID int64, userID int64) {
-    text := `请选择要执行的编辑命令：
-1 - 添加RSS订阅
-2 - 编辑RSS订阅
-3 - 删除RSS订阅
-4 - 向所有订阅添加关键词
-5 - 从所有订阅删除关键词
+    text := `编辑类命令列表：
 
-请输入命令编号（1-5）：`
-    b.userState[userID] = "edit_command"
+/add - 添加RSS订阅
+/edit - 编辑RSS订阅
+/delete - 删除RSS订阅
+/add_all - 向所有订阅添加关键词
+/del_all - 从所有订阅删除关键词`
     b.sendMessage(chatID, text)
 }
 
@@ -421,7 +439,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].URL = text
             }
             b.userState[userID] = fmt.Sprintf("edit_interval_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前间隔为：%d秒\n请输入新的间隔时间（秒）（如不修改请输入1）：", b.config.RSS[index].Interval))
+            b.sendMessage(chatID, fmt.Sprintf("当前间隔为：%d秒\n请输入新的间隔时间（秒）��如不修改请输入1）：", b.config.RSS[index].Interval))
         } else if strings.HasPrefix(b.userState[userID], "edit_interval_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_interval_"))
             if text != "1" {
@@ -441,7 +459,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Keywords = keywords
             }
             b.userState[userID] = fmt.Sprintf("edit_group_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前组名为：%s\n请输入新的组名（如不修改请输入1）：", b.config.RSS[index].Group))
+            b.sendMessage(chatID, fmt.Sprintf("当前组��为：%s\n请输入新的组名（如不修改请输入1）：", b.config.RSS[index].Group))
         } else if strings.HasPrefix(b.userState[userID], "edit_group_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_group_"))
             if text != "1" {
@@ -505,7 +523,7 @@ func (b *Bot) handleVersion(chatID int64) {
     // 获取最新版本
     latestVersion, err := b.getLatestVersion()
     if err != nil {
-        b.sendMessage(chatID, fmt.Sprintf("获取最新版��失败：%v", err))
+        b.sendMessage(chatID, fmt.Sprintf("获取最新版本失败：%v", err))
         return
     }
 
