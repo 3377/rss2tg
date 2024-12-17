@@ -122,7 +122,7 @@ func (b *Bot) Start() {
             case "version":
                 b.handleVersion(chatID)
             default:
-                b.sendMessage(chatID, "未知命令，请使用 /help 看可用命令。")
+                b.sendMessage(chatID, "��知命令，请使用 /help 看可用命令。")
             }
         } else {
             b.handleUserInput(update.Message)
@@ -134,10 +134,10 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     chinaLoc, _ := time.LoadLocation("Asia/Shanghai")
     pubDateChina := pubDate.In(chinaLoc)
     
-    // 将匹配的关键词粗
+    // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        boldKeywords[i] = "*" + keyword + "*"
+        boldKeywords[i] = "*#" + keyword + "*"
     }
     
     text := fmt.Sprintf("*%s*\n📡  %s\n🔍  %s\n🏷️  *%s*\n🕒  *%s*", 
@@ -414,6 +414,7 @@ func (b *Bot) getCurrentVersion() (string, error) {
 }
 
 func (b *Bot) getLatestVersion() (string, error) {
+    // 直接从远程获取最新版本
     resp, err := http.Get("https://raw.githubusercontent.com/3377/rss2tg/refs/heads/main/version")
     if err != nil {
         return "", fmt.Errorf("无法获取最新版本: %v", err)

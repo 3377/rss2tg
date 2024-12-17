@@ -1,0 +1,41 @@
+# 开发环境构建阶段
+FROM golang:1.19-alpine
+
+WORKDIR /app
+
+# 安装开发工具和调试工具
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    git \
+    tzdata \
+    ca-certificates \
+    bash \
+    curl \
+    dos2unix
+
+# 创建必要的目录
+RUN mkdir -p /app/config /app/data /app/src
+
+# 复制源代码
+COPY . .
+
+# 处理文件格式和权限（Windows环境兼容）
+RUN dos2unix entrypoint.sh && \
+    chmod +x entrypoint.sh
+
+# 编译
+RUN go mod download && \
+    go mod tidy && \
+    go build -o bot && \
+    chmod +x bot
+
+# 复制version文件到config目录
+COPY version /app/config/version
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 使用shell形式的ENTRYPOINT以确保正确的权限和路径
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/entrypoint.sh"]
+CMD ["/app/bot"] 

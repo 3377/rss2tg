@@ -1,0 +1,21 @@
+version: '3'
+services:
+  rss2tg_dev:
+    container_name: rss2tg_dev
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - type: bind
+        source: .
+        target: /app/src
+    environment:
+      - TZ=Asia/Shanghai
+    restart: "no"
+    privileged: true
+    ports:
+      - "2345:2345"
+    tty: true
+    stdin_open: true
