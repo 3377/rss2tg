@@ -3,13 +3,9 @@
 ## [English](#english-version) | [简体中文](#rss-to-telegram-bot-使用文档)
 
 #
->
-> [!TIP]
-> ***简称rss2tg，用于将自定义RSS地址，字段，刷新时间里的相关帖子即时发送到自定义TG用户或频道，省去你刷帖子的时间*** <br>
-> ***支持AMD64/ARM64*** <br>
-> ***镜像大小17M，内存占用10M*** <br>
-> **——By [drfyup](https://hstz.com)**
->
+
+> [!TIP] > **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_** <br> > **_支持 AMD64/ARM64_** <br> > **_镜像大小 17M，内存占用 10M_** <br> > **——By [drfyup](https://hstz.com)**
+
 #
 
 ## 1. 部署方法
@@ -28,16 +24,16 @@ git clone https://github.com/3377/rss2tg.git
 
 4. 编辑 `docker-compose.yml` 文件，修改环境变量：
 
--- 进入任意目录或直接当前目录，新建docker-compose.yml文件，填入以下内容
+-- 进入任意目录或直接当前目录，新建 docker-compose.yml 文件，填入以下内容
 
 ```yaml
-version: '3'
+version: "3"
 services:
   rss2tg:
     container_name: rss2tg
     image: drfyup/rss2tg:latest
     volumes:
-      - ./config:/app/config
+      - ./config/config.yaml:/app/config/config.yaml
       - ./data:/app/data
     environment:
       - TELEGRAM_BOT_TOKEN=your_bot_token_here
@@ -67,15 +63,15 @@ docker pull drfyup/rss2tg:latest
 
 ```yaml
 docker run -d \
-  --name rss2tg \
-  -v $(pwd)/config:/app/config \
-  -v $(pwd)/data:/app/data \
-  -e TELEGRAM_BOT_TOKEN=your_bot_token_here \
-  -e TELEGRAM_USERS=user_id_1,user_id_2 \
-  -e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  drfyup/rss2tg:latest
+--name rss2tg \
+-v $(pwd)/config:/app/config \
+-v $(pwd)/data:/app/data \
+-e TELEGRAM_BOT_TOKEN=your_bot_token_here \
+-e TELEGRAM_USERS=user_id_1,user_id_2 \
+-e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
+-e TZ=Asia/Shanghai \
+--restart unless-stopped \
+drfyup/rss2tg:latest
 ```
 
 请替换环境变量中的相应值。
@@ -138,28 +134,28 @@ Bot 支持以下命令：
 
 #### 方式二
 
-在当前config目录下新建config.ymal，填入以下内容。
+在当前 config 目录下新建 config.ymal，填入以下内容。
 
 ```yaml
 rss:
-- url: https://rss.nodeseek.com
-  interval: 30
-  keywords:
-  - vps
-  - 甲骨文
-  - 免费
-  group: NS论坛
-- url: https://linux.do/latest.rss
-  interval: 30
-  keywords:
-  - vps
-  - 甲骨文
-  - 免费
-  - 龟壳
-  group: LC论坛
+  - url: https://rss.nodeseek.com
+    interval: 30
+    keywords:
+      - vps
+      - 甲骨文
+      - 免费
+    group: NS论坛
+  - url: https://linux.do/latest.rss
+    interval: 30
+    keywords:
+      - vps
+      - 甲骨文
+      - 免费
+      - 龟壳
+    group: LC论坛
 ```
 
-***两种方式都可以，系统会每1分钟自动检测，即使动态更改生效。***
+**_两种方式都可以，系统会每 1 分钟自动检测，即使动态更改生效。_**
 
 ### 2.4 编辑 RSS 订阅
 
@@ -204,13 +200,14 @@ docker logs rss2tg
 ![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
 
 # English Version
+
 # RSS to Telegram Bot usage documentation
+
 #
-> [!TIP]
->*** Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts.*** <br>
->*** Support AMD64/ARM64*** <br>
->*** Image size 17M, memory footprint 10M*** <br>
->  **——By [drfyup](https://hstz.com)**
+
+> [!TIP] >**_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._** <br> >**_ Support AMD64/ARM64_** <br> >**_ Image size 17M, memory footprint 10M_** <br>
+> **——By [drfyup](https://hstz.com)**
+
 #
 
 ## 1. Deployment method
@@ -232,7 +229,7 @@ git clone https://github.com/3377/rss2tg.git
 -- Enter any directory or directly the current directory and create a new docker-compose.yml file, fill in the following content
 
 ```yaml
-version: '3'
+version: "3"
 services:
   rss2tg:
     container_name: rss2tg
@@ -268,15 +265,15 @@ docker pull drfyup/rss2tg:latest
 
 ```yaml
 docker run -d \
-  --name rss2tg \
-  -v $(pwd)/config:/app/config \
-  -v $(pwd)/data:/app/data \
-  -e TELEGRAM_BOT_TOKEN=your_bot_token_here \
-  -e TELEGRAM_USERS=user_id_1,user_id_2 \
-  -e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  drfyup/rss2tg:latest
+--name rss2tg \
+-v $(pwd)/config:/app/config \
+-v $(pwd)/data:/app/data \
+-e TELEGRAM_BOT_TOKEN=your_bot_token_here \
+-e TELEGRAM_USERS=user_id_1,user_id_2 \
+-e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
+-e TZ=Asia/Shanghai \
+--restart unless-stopped \
+drfyup/rss2tg:latest
 ```
 
 Please replace the corresponding value in the environment variable.
@@ -318,14 +315,7 @@ rss:
 
 The Bot supports the following commands：
 
--`/start`-Start using the robot
--`/help`-Get help information
--`/config`-View current configuration
--`/add`-add RSS subscription
--`/edit`-edit RSS feed
--`/delete`-delete RSS feed
--`/list`-list all RSS feeds
--`/statistics`-View push statistics
+-`/start`-Start using the robot -`/help`-Get help information -`/config`-View current configuration -`/add`-add RSS subscription -`/edit`-edit RSS feed -`/delete`-delete RSS feed -`/list`-list all RSS feeds -`/statistics`-View push statistics
 
 ### 2.3 Add RSS feed
 
@@ -359,7 +349,8 @@ rss:
   -Turtle shell
   group: LC Forum
 ```
-***Both methods are possible, the system will automatically detect every 1 minute, even if the dynamic changes take effect.***
+
+**_Both methods are possible, the system will automatically detect every 1 minute, even if the dynamic changes take effect._**
 
 ### 2.4 Edit RSS feed
 

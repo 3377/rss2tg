@@ -71,16 +71,10 @@ func (b *Bot) Start() {
     log.Println("机器人已启动")
     
     commands := []tgbotapi.BotCommand{
-        {Command: "start", Description: "开始使用机器人并查看帮助信息"},
-        {Command: "config", Description: "查看当前配置"},
-        {Command: "add", Description: "添加RSS订阅"},
-        {Command: "add_all", Description: "向所有订阅添加关键词"},
-        {Command: "del_all", Description: "从所有订阅删除关键词"},
-        {Command: "edit", Description: "编辑RSS订阅"},
-        {Command: "delete", Description: "删除RSS订阅"},
-        {Command: "list", Description: "列出所有RSS订阅"},
-        {Command: "stats", Description: "查看推送统计"},
-        {Command: "version", Description: "获取当前版本信息"},
+        {Command: "start", Description: "开始/帮助"},
+        {Command: "view", Description: "查看类命令"},
+        {Command: "edit", Description: "编辑类命令"},
+        {Command: "stats", Description: "推送统计"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -106,24 +100,12 @@ func (b *Bot) Start() {
             switch update.Message.Command() {
             case "start":
                 b.handleStart(chatID)
-            case "config":
-                b.handleConfig(chatID)
-            case "add":
-                b.handleAdd(chatID, userID)
-            case "add_all":
-                b.handleAddAll(chatID, userID)
-            case "del_all":
-                b.handleDelAll(chatID, userID)
-            case "edit":
-                b.handleEdit(chatID, userID)
-            case "delete":
-                b.handleDelete(chatID, userID)
-            case "list":
-                b.handleList(chatID)
             case "stats":
                 b.handleStats(chatID)
-            case "version":
-                b.handleVersion(chatID)
+            case "view":
+                b.handleView(chatID, userID)
+            case "edit":
+                b.handleEdit(chatID, userID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -143,7 +125,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = "*#" + keyword + "*"
     }
     
-    text := fmt.Sprintf("*%s*\n\n*🌐 链接：*%s\n\n*🔍 关键词：*%s\n\n*🏷️ 分组：*%s\n\n*🕒 时间：*%s", 
+    text := fmt.Sprintf("*%s*\n\n🌐 链接：*%s*\n\n🔍 关键词：*%s*\n\n🏷️ 分组：*%s*\n\n🕒 时间：*%s*", 
         title, 
         url, 
         strings.Join(boldKeywords, " "), 
@@ -187,38 +169,52 @@ func (b *Bot) reloadConfig() error {
 }
 
 func (b *Bot) handleStart(chatID int64) {
-    // 更新命令列表
-    commands := []tgbotapi.BotCommand{
-        {Command: "start", Description: "开始使用机器人并查看帮助信息"},
-        {Command: "config", Description: "查看当前配置"},
-        {Command: "add", Description: "添加RSS订阅"},
-        {Command: "add_all", Description: "向所有订阅添加关键词"},
-        {Command: "del_all", Description: "从所有订阅删除关键词"},
-        {Command: "edit", Description: "编辑RSS订阅"},
-        {Command: "delete", Description: "删除RSS订阅"},
-        {Command: "list", Description: "列出所有RSS订阅"},
-        {Command: "stats", Description: "查看推送统计"},
-        {Command: "version", Description: "获取当前版本信息"},
-    }
-    
-    setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
-    if _, err := b.api.Request(setMyCommandsConfig); err != nil {
-        log.Printf("更新命令列表失败: %v", err)
-    }
-
     helpText := `欢迎使用RSS订阅机器人！
 
-可用命令：
-/config - 查看当前配置
-/add - 添加RSS订阅
-/add_all - 向所有订阅添加关键词
-/del_all - 从所有订阅删除关键词
-/edit - 编辑RSS订阅
-/delete - 删除RSS订阅
-/list - 列出所有RSS订阅
+主要命令：
+/start - 开始使用机器人并查看帮助信息
 /stats - 查看推送统计
-/version - 获取当前版本信息`
+/view - 查看类命令合集
+/edit - 编辑类命令合集
+
+查看类命令（使用 /view 选择）：
+1 - 查看当前配置
+2 - 查看推送统计
+3 - 列出所有RSS订阅
+4 - 获取当前版本信息
+
+编辑类命令（使用 /edit 选择）：
+1 - 添加RSS订阅
+2 - 编辑RSS订阅
+3 - 删除RSS订阅
+4 - 向所有订阅添加关键词
+5 - 从所有订阅删除关键词`
     b.sendMessage(chatID, helpText)
+}
+
+func (b *Bot) handleView(chatID int64, userID int64) {
+    text := `请选择要执行的查看命令：
+1 - 查看当前配置
+2 - 查看推送统计
+3 - 列出所有RSS订阅
+4 - 获取当前版本信息
+
+请输入命令编号（1-4）：`
+    b.userState[userID] = "view_command"
+    b.sendMessage(chatID, text)
+}
+
+func (b *Bot) handleEdit(chatID int64, userID int64) {
+    text := `请选择要执行的编辑命令：
+1 - 添加RSS订阅
+2 - 编辑RSS订阅
+3 - 删除RSS订阅
+4 - 向所有订阅添加关键词
+5 - 从所有订阅删除关键词
+
+请输入命令编号（1-5）：`
+    b.userState[userID] = "edit_command"
+    b.sendMessage(chatID, text)
 }
 
 func (b *Bot) handleConfig(chatID int64) {
@@ -268,6 +264,37 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
     text := message.Text
 
     switch b.userState[userID] {
+    case "view_command":
+        switch text {
+        case "1":
+            b.handleConfig(chatID)
+        case "2":
+            b.handleStats(chatID)
+        case "3":
+            b.handleList(chatID)
+        case "4":
+            b.handleVersion(chatID)
+        default:
+            b.sendMessage(chatID, "无效的命令编号，请使用 /view 重新选择。")
+        }
+        delete(b.userState, userID)
+    case "edit_command":
+        switch text {
+        case "1":
+            b.handleAdd(chatID, userID)
+        case "2":
+            b.handleEdit(chatID, userID)
+        case "3":
+            b.handleDelete(chatID, userID)
+        case "4":
+            b.handleAddAll(chatID, userID)
+        case "5":
+            b.handleDelAll(chatID, userID)
+        default:
+            b.sendMessage(chatID, "无效的命令编号，请使用 /edit 重新选择。")
+            delete(b.userState, userID)
+            return
+        }
     case "add_url":
         b.userState[userID] = "add_interval"
         b.config.RSS = append(b.config.RSS, struct {
