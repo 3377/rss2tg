@@ -105,7 +105,7 @@ func (b *Bot) Start() {
             case "view":
                 b.handleView(chatID, userID)
             case "edit":
-                b.handleEdit(chatID, userID)
+                b.handleEditCommand(chatID, userID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -140,7 +140,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         if _, err := b.api.Send(msg); err != nil {
             log.Printf("发送消息给用户 %d 失败: %v", userID, err)
         } else {
-            log.Printf("成功发送消息给用户 %d", userID)
+            log.Printf("成功��送消息给用户 %d", userID)
             b.stats.IncrementMessageCount()
         }
     }
@@ -204,7 +204,7 @@ func (b *Bot) handleView(chatID int64, userID int64) {
     b.sendMessage(chatID, text)
 }
 
-func (b *Bot) handleEdit(chatID int64, userID int64) {
+func (b *Bot) handleEditCommand(chatID int64, userID int64) {
     text := `请选择要执行的编辑命令：
 1 - 添加RSS订阅
 2 - 编辑RSS订阅
@@ -505,7 +505,7 @@ func (b *Bot) handleVersion(chatID int64) {
     // 获取最新版本
     latestVersion, err := b.getLatestVersion()
     if err != nil {
-        b.sendMessage(chatID, fmt.Sprintf("获取最新版本失败：%v", err))
+        b.sendMessage(chatID, fmt.Sprintf("获取最新版��失败：%v", err))
         return
     }
 
