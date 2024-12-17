@@ -1,0 +1,10 @@
+# 配置文件（可能包含敏感信息）
+config/config.yaml
+
+# 运行时数据
+data/sent_items.txt
+data/stats.yaml
+
+# 其他
+.DS_Store
+*.log 
