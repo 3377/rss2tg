@@ -12,8 +12,10 @@ RUN go mod download
 
 # 复制源代码并构建
 COPY . .
-RUN go mod tidy
-RUN go build -ldflags="-w -s" -o bot
+RUN go mod tidy && \
+    mkdir -p config && \
+    cp version config/version && \
+    go build -ldflags="-w -s" -o bot
 
 # 运行阶段
 FROM alpine:latest
