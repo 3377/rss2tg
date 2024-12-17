@@ -4,7 +4,7 @@ services:
     container_name: rss2tg
     image: drfyup/rss2tg:latest
     volumes:
-      - ./config:/app/config
+      - ./config/config.yaml:/app/config/config.yaml
       - ./data:/app/data
     environment:
       - TELEGRAM_BOT_TOKEN=
