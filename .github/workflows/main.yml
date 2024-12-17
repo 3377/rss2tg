@@ -4,6 +4,13 @@ name: 构建并推送 Docker 镜像
 # 定义触发工作流的条件
 on:
   push:
+    branches: [ "main" ]  # 只在 main 分支上触发
+    paths:
+      - 'Dockerfile'      # 当 Dockerfile 发生变化时触发
+      - 'version'         # 当 version 文件发生变化时触发
+  pull_request:
+    branches: [ "main" ]  # 当对 main 分支发起 pull request 时触发
+  workflow_dispatch:      # 允许手动触发工作流
 
 # 环境变量
 env:
