@@ -12,6 +12,7 @@ import (
 type Stats struct {
     DailyCount  int       `json:"daily_count"`
     WeeklyCount int       `json:"weekly_count"`
+    TotalCount  int       `json:"total_count"`
     LastReset   time.Time `json:"last_reset"`
     filePath    string
     mu          sync.Mutex
@@ -52,15 +53,16 @@ func (s *Stats) IncrementMessageCount() {
     defer s.mu.Unlock()
     s.DailyCount++
     s.WeeklyCount++
+    s.TotalCount++
     if err := s.save(); err != nil {
         log.Printf("保存统计信息失败: %v", err)
     }
 }
 
-func (s *Stats) GetMessageCounts() (int, int) {
+func (s *Stats) GetMessageCounts() (int, int, int) {
     s.mu.Lock()
     defer s.mu.Unlock()
-    return s.DailyCount, s.WeeklyCount
+    return s.DailyCount, s.WeeklyCount, s.TotalCount
 }
 
 func (s *Stats) resetCounters() {

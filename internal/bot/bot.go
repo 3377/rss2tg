@@ -74,12 +74,13 @@ func (b *Bot) Start() {
         {Command: "start", Description: "开始使用机器人并查看帮助信息"},
         {Command: "config", Description: "查看当前配置"},
         {Command: "add", Description: "添加RSS订阅"},
-        {Command: "add-all", Description: "向所有订阅添加关键词"},
-        {Command: "del-all", Description: "从所有订阅删除关键词"},
+        {Command: "add_all", Description: "向所有订阅添加关键词"},
+        {Command: "del_all", Description: "从所有订阅删除关键词"},
         {Command: "edit", Description: "编辑RSS订阅"},
         {Command: "delete", Description: "删除RSS订阅"},
         {Command: "list", Description: "列出所有RSS订阅"},
         {Command: "stats", Description: "查看推送统计"},
+        {Command: "version", Description: "获取当前版本信息"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -109,9 +110,9 @@ func (b *Bot) Start() {
                 b.handleConfig(chatID)
             case "add":
                 b.handleAdd(chatID, userID)
-            case "add-all":
+            case "add_all":
                 b.handleAddAll(chatID, userID)
-            case "del-all":
+            case "del_all":
                 b.handleDelAll(chatID, userID)
             case "edit":
                 b.handleEdit(chatID, userID)
@@ -121,6 +122,8 @@ func (b *Bot) Start() {
                 b.handleList(chatID)
             case "stats":
                 b.handleStats(chatID)
+            case "version":
+                b.handleVersion(chatID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -184,17 +187,37 @@ func (b *Bot) reloadConfig() error {
 }
 
 func (b *Bot) handleStart(chatID int64) {
+    // 更新命令列表
+    commands := []tgbotapi.BotCommand{
+        {Command: "start", Description: "开始使用机器人并查看帮助信息"},
+        {Command: "config", Description: "查看当前配置"},
+        {Command: "add", Description: "添加RSS订阅"},
+        {Command: "add_all", Description: "向所有订阅添加关键词"},
+        {Command: "del_all", Description: "从所有订阅删除关键词"},
+        {Command: "edit", Description: "编辑RSS订阅"},
+        {Command: "delete", Description: "删除RSS订阅"},
+        {Command: "list", Description: "列出所有RSS订阅"},
+        {Command: "stats", Description: "查看推送统计"},
+        {Command: "version", Description: "获取当前版本信息"},
+    }
+    
+    setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
+    if _, err := b.api.Request(setMyCommandsConfig); err != nil {
+        log.Printf("更新命令列表失败: %v", err)
+    }
+
     helpText := `欢迎使用RSS订阅机器人！
 
 可用命令：
 /config - 查看当前配置
 /add - 添加RSS订阅
-/add-all - 向所有订阅添加关键词
-/del-all - 从所有订阅删除关键词
+/add_all - 向所有订阅添加关键词
+/del_all - 从所有订阅删除关键词
 /edit - 编辑RSS订阅
 /delete - 删除RSS订阅
 /list - 列出所有RSS订阅
-/stats - 查看推送统计`
+/stats - 查看推送统计
+/version - 获取当前版本信息`
     b.sendMessage(chatID, helpText)
 }
 
@@ -410,6 +433,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
 
 func (b *Bot) sendMessage(chatID int64, text string) {
     msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
     }
@@ -421,7 +445,7 @@ func (b *Bot) getConfig() string {
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        config += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: %v\n   🏷️  组名: %s\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
+        config += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
     }
     return config
 }
@@ -429,14 +453,14 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        list += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: %v\n   🏷️  组名: %s\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
+        list += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
     }
     return list
 }
 
 func (b *Bot) getStats() string {
-    dailyCount, weeklyCount := b.stats.GetMessageCounts()
-    return fmt.Sprintf("推送统计:\n📊  今日推送: %d\n📈  本周推送: %d", dailyCount, weeklyCount)
+    dailyCount, weeklyCount, totalCount := b.stats.GetMessageCounts()
+    return fmt.Sprintf("推送统计:\n📊  今日推送: *%d*\n📈  本周推送: *%d*\n📋  总计推送: *%d*", dailyCount, weeklyCount, totalCount)
 }
 
 func (b *Bot) UpdateConfig(cfg *config.Config) {
