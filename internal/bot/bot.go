@@ -71,15 +71,15 @@ func (b *Bot) Start() {
     log.Println("机器人已启动")
     
     commands := []tgbotapi.BotCommand{
-        {Command: "start", Description: "开始使用机器人"},
-        {Command: "help", Description: "获取帮助信息"},
+        {Command: "start", Description: "开始使用机器人并查看帮助信息"},
         {Command: "config", Description: "查看当前配置"},
         {Command: "add", Description: "添加RSS订阅"},
+        {Command: "add-all", Description: "向所有订阅添加关键词"},
+        {Command: "del-all", Description: "从所有订阅删除关键词"},
         {Command: "edit", Description: "编辑RSS订阅"},
         {Command: "delete", Description: "删除RSS订阅"},
         {Command: "list", Description: "列出所有RSS订阅"},
         {Command: "stats", Description: "查看推送统计"},
-        {Command: "version", Description: "获取当前版本信息"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -105,12 +105,14 @@ func (b *Bot) Start() {
             switch update.Message.Command() {
             case "start":
                 b.handleStart(chatID)
-            case "help":
-                b.handleHelp(chatID)
             case "config":
                 b.handleConfig(chatID)
             case "add":
                 b.handleAdd(chatID, userID)
+            case "add-all":
+                b.handleAddAll(chatID, userID)
+            case "del-all":
+                b.handleDelAll(chatID, userID)
             case "edit":
                 b.handleEdit(chatID, userID)
             case "delete":
@@ -119,10 +121,8 @@ func (b *Bot) Start() {
                 b.handleList(chatID)
             case "stats":
                 b.handleStats(chatID)
-            case "version":
-                b.handleVersion(chatID)
             default:
-                b.sendMessage(chatID, "��知命令，请使用 /help 看可用命令。")
+                b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
         } else {
             b.handleUserInput(update.Message)
@@ -140,10 +140,10 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = "*#" + keyword + "*"
     }
     
-    text := fmt.Sprintf("*%s*\n📡  %s\n🔍  %s\n🏷️  *%s*\n🕒  *%s*", 
+    text := fmt.Sprintf("*%s*\n\n*🌐 链接：*%s\n\n*🔍 关键词：*%s\n\n*🏷️ 分组：*%s\n\n*🕒 时间：*%s", 
         title, 
         url, 
-        strings.Join(boldKeywords, ", "), 
+        strings.Join(boldKeywords, " "), 
         group, 
         pubDateChina.Format("2006-01-02 15:04:05"))
     
@@ -184,18 +184,17 @@ func (b *Bot) reloadConfig() error {
 }
 
 func (b *Bot) handleStart(chatID int64) {
-    b.sendMessage(chatID, "欢迎使用RSS订阅机器人！使用 /help 查看可用命令。")
-}
+    helpText := `欢迎使用RSS订阅机器人！
 
-func (b *Bot) handleHelp(chatID int64) {
-    helpText := `可用命令：
+可用命令：
 /config - 查看当前配置
 /add - 添加RSS订阅
+/add-all - 向所有订阅添加关键词
+/del-all - 从所有订阅删除关键词
 /edit - 编辑RSS订阅
 /delete - 删除RSS订阅
 /list - 列出所有RSS订阅
-/stats - 查看推送统计
-/version - 获取当前版本信息`
+/stats - 查看推送统计`
     b.sendMessage(chatID, helpText)
 }
 
@@ -302,6 +301,66 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             b.sendMessage(chatID, "删除订阅成功，但保存配置失败。")
         } else {
             b.sendMessage(chatID, fmt.Sprintf("成功删除订阅: %s", deletedRSS.URL))
+            b.updateRSSHandler()
+        }
+        delete(b.userState, userID)
+    case "add_all_keywords":
+        keywords := strings.Fields(text)
+        if len(keywords) == 0 {
+            b.sendMessage(chatID, "请输入至少一个关键词。")
+            return
+        }
+        
+        // 向所有订阅添加关键词
+        for i := range b.config.RSS {
+            existingKeywords := make(map[string]bool)
+            for _, k := range b.config.RSS[i].Keywords {
+                existingKeywords[strings.ToLower(k)] = true
+            }
+            
+            // 添加新关键词（避免重复）
+            for _, newKeyword := range keywords {
+                if !existingKeywords[strings.ToLower(newKeyword)] {
+                    b.config.RSS[i].Keywords = append(b.config.RSS[i].Keywords, newKeyword)
+                }
+            }
+        }
+        
+        if err := b.config.Save(b.configFile); err != nil {
+            b.sendMessage(chatID, "添加关键词成功，但保存配置失败。")
+        } else {
+            b.sendMessage(chatID, fmt.Sprintf("成功向所有订阅添加关键词：%v", keywords))
+            b.updateRSSHandler()
+        }
+        delete(b.userState, userID)
+        
+    case "del_all_keywords":
+        keywords := strings.Fields(text)
+        if len(keywords) == 0 {
+            b.sendMessage(chatID, "请输入至少一个关键词。")
+            return
+        }
+        
+        // 从所有订阅中删除关键词
+        keywordsToRemove := make(map[string]bool)
+        for _, k := range keywords {
+            keywordsToRemove[strings.ToLower(k)] = true
+        }
+        
+        for i := range b.config.RSS {
+            newKeywords := make([]string, 0)
+            for _, k := range b.config.RSS[i].Keywords {
+                if !keywordsToRemove[strings.ToLower(k)] {
+                    newKeywords = append(newKeywords, k)
+                }
+            }
+            b.config.RSS[i].Keywords = newKeywords
+        }
+        
+        if err := b.config.Save(b.configFile); err != nil {
+            b.sendMessage(chatID, "删除关键词成功，但保存配置失败。")
+        } else {
+            b.sendMessage(chatID, fmt.Sprintf("成功从所有订阅中删除关键词：%v", keywords))
             b.updateRSSHandler()
         }
         delete(b.userState, userID)
@@ -431,4 +490,14 @@ func (b *Bot) getLatestVersion() (string, error) {
     }
 
     return strings.TrimSpace(string(body)), nil
+}
+
+func (b *Bot) handleAddAll(chatID int64, userID int64) {
+    b.userState[userID] = "add_all_keywords"
+    b.sendMessage(chatID, "请输入要添加到所有订阅的关键词（用空格分隔）：")
+}
+
+func (b *Bot) handleDelAll(chatID int64, userID int64) {
+    b.userState[userID] = "del_all_keywords"
+    b.sendMessage(chatID, "请输入要从所有订阅中删除的关键词（用空格分隔）：")
 }
