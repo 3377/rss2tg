@@ -157,10 +157,10 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        boldKeywords[i] = "#*" + keyword + "*"
+        boldKeywords[i] = "#" + keyword
     }
     
-    text := fmt.Sprintf("*%s*\n\n*🌐 链接：*%s*\n\n*🔍 关键词：*%s\n\n*🏷️ 分组：*%s*\n\n*🕒 时间：*%s*", 
+    text := fmt.Sprintf("*%s*\n\n*🌐 链接*：%s\n\n*🔍 关键词*：%s\n\n*🏷️ 分组*：%s\n\n*🕒 时间*：%s", 
         title, 
         url, 
         strings.Join(boldKeywords, " "), 
