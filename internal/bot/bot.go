@@ -160,7 +160,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = "#*" + keyword + "*"
     }
     
-    text := fmt.Sprintf("*%s*\n\n🌐 链接：*%s*\n\n🔍 关键词：%s\n\n🏷️ 分组：*%s*\n\n🕒 时间：*%s*", 
+    text := fmt.Sprintf("*%s*\n\n*🌐 链接：*%s*\n\n*🔍 关键词：*%s\n\n*🏷️ 分组：*%s*\n\n*🕒 时间：*%s*", 
         title, 
         url, 
         strings.Join(boldKeywords, " "), 
@@ -506,7 +506,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Keywords = keywords
             }
             b.userState[userID] = fmt.Sprintf("edit_group_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前组名为：%s\n请输入新的组名（如不修改请输��1）：", b.config.RSS[index].Group))
+            b.sendMessage(chatID, fmt.Sprintf("当前组名为：%s\n请输入新的组名（如不修改请输入1）：", b.config.RSS[index].Group))
         } else if strings.HasPrefix(b.userState[userID], "edit_group_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_group_"))
             if text != "1" {
