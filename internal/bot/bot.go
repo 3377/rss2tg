@@ -75,14 +75,6 @@ func (b *Bot) Start() {
         {Command: "view", Description: "查看类命令"},
         {Command: "edit", Description: "编辑类命令"},
         {Command: "stats", Description: "推送统计"},
-        {Command: "config", Description: "查看当前配置"},
-        {Command: "list", Description: "列出所有RSS订阅"},
-        {Command: "version", Description: "获取当前版本信息"},
-        {Command: "add", Description: "添加RSS订阅"},
-        {Command: "edit", Description: "编辑RSS订阅"},
-        {Command: "delete", Description: "删除RSS订阅"},
-        {Command: "add_all", Description: "向所有订阅添加关键词"},
-        {Command: "del_all", Description: "从所有订阅删除关键词"},
     }
     
     setMyCommandsConfig := tgbotapi.NewSetMyCommands(commands...)
@@ -97,6 +89,41 @@ func (b *Bot) Start() {
     updates := b.api.GetUpdatesChan(u)
 
     for update := range updates {
+        if update.CallbackQuery != nil {
+            // 处理按钮点击
+            chatID := update.CallbackQuery.Message.Chat.ID
+            userID := update.CallbackQuery.From.ID
+            
+            switch update.CallbackQuery.Data {
+            case "config":
+                b.handleConfig(chatID)
+            case "list":
+                b.handleList(chatID)
+            case "stats":
+                b.handleStats(chatID)
+            case "version":
+                b.handleVersion(chatID)
+            case "add":
+                b.handleAdd(chatID, userID)
+            case "edit":
+                b.handleEdit(chatID, userID)
+            case "delete":
+                b.handleDelete(chatID, userID)
+            case "add_all":
+                b.handleAddAll(chatID, userID)
+            case "del_all":
+                b.handleDelAll(chatID, userID)
+            }
+            
+            // 回应按钮点击
+            callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+            if _, err := b.api.Request(callback); err != nil {
+                log.Printf("回应按钮点击失败: %v", err)
+            }
+            
+            continue
+        }
+
         if update.Message == nil {
             continue
         }
@@ -114,20 +141,6 @@ func (b *Bot) Start() {
                 b.handleView(chatID, userID)
             case "edit":
                 b.handleEditCommand(chatID, userID)
-            case "config":
-                b.handleConfig(chatID)
-            case "list":
-                b.handleList(chatID)
-            case "version":
-                b.handleVersion(chatID)
-            case "add":
-                b.handleAdd(chatID, userID)
-            case "delete":
-                b.handleDelete(chatID, userID)
-            case "add_all":
-                b.handleAddAll(chatID, userID)
-            case "del_all":
-                b.handleDelAll(chatID, userID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -144,10 +157,10 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        boldKeywords[i] = "*#" + keyword + "*"
+        boldKeywords[i] = "#*" + keyword + "*"
     }
     
-    text := fmt.Sprintf("*%s*\n\n🌐 链接：*%s*\n\n🔍 关键词：*%s*\n\n🏷️ 分组：*%s*\n\n🕒 时间：*%s*", 
+    text := fmt.Sprintf("*%s*\n\n🌐 链接：*%s*\n\n🔍 关键词：%s\n\n🏷️ 分组：*%s*\n\n🕒 时间：*%s*", 
         title, 
         url, 
         strings.Join(boldKeywords, " "), 
@@ -215,24 +228,58 @@ func (b *Bot) handleStart(chatID int64) {
 }
 
 func (b *Bot) handleView(chatID int64, userID int64) {
-    text := `查看类命令列表：
+    text := "查看类命令列表："
+    
+    // 创建按钮列表
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📋 查看当前配置", "config"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📜 列出所有RSS订阅", "list"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📊 查看推送统计", "stats"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("ℹ️ 获取当前版本", "version"),
+        ),
+    )
 
-/config - 查看当前配置
-/list - 列出所有RSS订阅
-/stats - 查看推送统计
-/version - 获取当前版本信息`
-    b.sendMessage(chatID, text)
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ReplyMarkup = keyboard
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleEditCommand(chatID int64, userID int64) {
-    text := `编辑类命令列表：
+    text := "编辑类命令列表："
+    
+    // 创建按钮列表
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("➕ 添加RSS订阅", "add"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("✏️ 编辑RSS订阅", "edit"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("❌ 删除RSS订阅", "delete"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📝 添加全局关键词", "add_all"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🗑️ 删除全局关键词", "del_all"),
+        ),
+    )
 
-/add - 添加RSS订阅
-/edit - 编辑RSS订阅
-/delete - 删除RSS订阅
-/add_all - 向所有订阅添加关键词
-/del_all - 从所有订阅删除关键词`
-    b.sendMessage(chatID, text)
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ReplyMarkup = keyboard
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleConfig(chatID int64) {
@@ -439,7 +486,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].URL = text
             }
             b.userState[userID] = fmt.Sprintf("edit_interval_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前间隔为：%d秒\n请输入新的间隔时间（秒）��如不修改请输入1）：", b.config.RSS[index].Interval))
+            b.sendMessage(chatID, fmt.Sprintf("当前间隔为：%d秒\n请输入新的间隔时间（秒）如不修改请输入1）：", b.config.RSS[index].Interval))
         } else if strings.HasPrefix(b.userState[userID], "edit_interval_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_interval_"))
             if text != "1" {
@@ -459,7 +506,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Keywords = keywords
             }
             b.userState[userID] = fmt.Sprintf("edit_group_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前组��为：%s\n请输入新的组名（如不修改请输入1）：", b.config.RSS[index].Group))
+            b.sendMessage(chatID, fmt.Sprintf("当前组名为：%s\n请输入新的组名（如不修改请输��1）：", b.config.RSS[index].Group))
         } else if strings.HasPrefix(b.userState[userID], "edit_group_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_group_"))
             if text != "1" {
