@@ -10,6 +10,8 @@ jobs:
       # 检出代码
       - name: 检出代码
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # 获取所有提交历史，确保可以获取到version文件的提交记录
 
       # 读取版本号
       - name: 读取版本号
@@ -39,8 +41,8 @@ jobs:
         run: |
           zip -r rss2tg-${{ env.VERSION }}.zip . -x "*.git*"
 
-      # 创建发布
-      - name: 创建发布
+      # 创建预发布
+      - name: 创建预发布
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ env.VERSION_TAG }} # 使用版本标签
@@ -64,6 +66,6 @@ jobs:
           files: |
             rss2tg-${{ env.VERSION }}.zip
           draft: false
-          prerelease: false
+          prerelease: true # 设置为预发布
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
