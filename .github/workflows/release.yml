@@ -17,8 +17,19 @@ jobs:
         run: |
           VERSION=$(cat version)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          # 获取最近一次提交信息
-          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV # 创建版本标签变量
+
+      # 获取 version 文件最后一次提交信息
+      - name: 获取 version 文件最后一次提交信息
+        id: get_version_commit
+        run: |
+          COMMIT_HASH=$(git log -n 1 --pretty=format:"%H" version)
+          if [[ -z "$COMMIT_HASH" ]]; then
+            echo "没有找到 version 文件的提交记录，使用最后一次提交信息"
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+          else
+            COMMIT_MSG=$(git log -1 --pretty=%B $COMMIT_HASH)
+          fi
           echo "COMMIT_MSG<<EOF" >> $GITHUB_ENV
           echo "$COMMIT_MSG" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -32,10 +43,10 @@ jobs:
       - name: 创建发布
         uses: softprops/action-gh-release@v1
         with:
-          name: v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
+          name: ${{ env.VERSION_TAG }} # 使用版本标签
+          tag_name: ${{ env.VERSION_TAG }} # 使用版本标签
           body: |
-            ## 版本 v${{ env.VERSION }}
+            ## 版本 ${{ env.VERSION_TAG }}
 
             ### 更新说明
             ${{ env.COMMIT_MSG }}
