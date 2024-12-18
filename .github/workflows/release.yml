@@ -1,0 +1,58 @@
+name: 发布发行版本
+
+on:
+  workflow_dispatch: # 手动触发
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: 检出代码
+        uses: actions/checkout@v3
+
+      # 读取版本号
+      - name: 读取版本号
+        id: get_version
+        run: |
+          VERSION=$(cat version)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          # 获取最近一次提交信息
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "COMMIT_MSG<<EOF" >> $GITHUB_ENV
+          echo "$COMMIT_MSG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # 创建源代码压缩包
+      - name: 创建源代码压缩包
+        run: |
+          zip -r rss2tg-${{ env.VERSION }}.zip . -x "*.git*"
+
+      # 创建发布
+      - name: 创建发布
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          body: |
+            ## 版本 v${{ env.VERSION }}
+
+            ### 更新说明
+            ${{ env.COMMIT_MSG }}
+
+            ### Docker 镜像
+            - GitHub Container Registry:
+              - `ghcr.io/${{ github.repository_owner }}/rss2tg:latest`
+              - `ghcr.io/${{ github.repository_owner }}/rss2tg:${{ env.VERSION }}`
+            - Docker Hub:
+              - `drfyup/rss2tg:latest`
+              - `drfyup/rss2tg:${{ env.VERSION }}`
+
+            ### 源代码
+            包含完整的源代码，不包含 git 相关文件。
+          files: |
+            rss2tg-${{ env.VERSION }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
