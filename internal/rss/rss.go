@@ -2,6 +2,7 @@ package rss
 
 import (
     "log"
+    "net/http"
     "strings"
     "sync"
     "time"
@@ -99,6 +100,28 @@ func (m *Manager) pollFeed(feed *Feed) {
 
 func (m *Manager) checkFeed(feed *Feed) {
     fp := gofeed.NewParser()
+    
+    // 创建自定义的 HTTP 客户端
+    client := &http.Client{
+        Timeout: 30 * time.Second,
+    }
+    
+    // 创建自定义的请求
+    req, err := http.NewRequest("GET", feed.URL, nil)
+    if err != nil {
+        log.Printf("创建请求失败 %s: %v", feed.URL, err)
+        return
+    }
+    
+    // 添加浏览器标识和其他必要的头信息
+    req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+    req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+    req.Header.Set("Connection", "keep-alive")
+    req.Header.Set("Upgrade-Insecure-Requests", "1")
+    
+    // 使用自定义客户端解析 Feed
+    fp.Client = client
     parsedFeed, err := fp.ParseURL(feed.URL)
     if err != nil {
         log.Printf("解析Feed %s失败: %v", feed.URL, err)
