@@ -141,6 +141,16 @@ func (b *Bot) Start() {
                 b.handleView(chatID, userID)
             case "edit":
                 b.handleEditCommand(chatID, userID)
+            case "config":
+                b.handleConfig(chatID)
+            case "list":
+                b.handleList(chatID)
+            case "version":
+                b.handleVersion(chatID)
+            case "add":
+                b.handleAdd(chatID, userID)
+            case "delete":
+                b.handleDelete(chatID, userID)
             default:
                 b.sendMessage(chatID, "未知命令，请使用 /start 查看可用命令。")
             }
@@ -234,14 +244,10 @@ func (b *Bot) handleView(chatID int64, userID int64) {
     keyboard := tgbotapi.NewInlineKeyboardMarkup(
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("📋 查看当前配置", "config"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("📜 列出所有RSS订阅", "list"),
+            tgbotapi.NewInlineKeyboardButtonData("📜 列出RSS订阅", "list"),
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("📊 查看推送统计", "stats"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("ℹ️ 获取当前版本", "version"),
         ),
     )
@@ -260,14 +266,10 @@ func (b *Bot) handleEditCommand(chatID int64, userID int64) {
     keyboard := tgbotapi.NewInlineKeyboardMarkup(
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("➕ 添加RSS订阅", "add"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("✏️ 编辑RSS订阅", "edit"),
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("❌ 删除RSS订阅", "delete"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("📝 添加全局关键词", "add_all"),
         ),
         tgbotapi.NewInlineKeyboardRow(
@@ -368,7 +370,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             Keywords []string `yaml:"keywords"`
             Group    string   `yaml:"group"`
         }{URL: text})
-        b.sendMessage(chatID, "���输入订阅的更新间隔（秒）：")
+        b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
         interval, err := strconv.Atoi(text)
         if err != nil {
