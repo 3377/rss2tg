@@ -117,86 +117,54 @@ func (m *Manager) checkFeed(feed *Feed) {
     // 创建自定义的 HTTP 客户端
     client := &http.Client{
         Timeout: 30 * time.Second,
-        Transport: &http.Transport{
-            MaxIdleConns:        100,
-            IdleConnTimeout:     90 * time.Second,
-            DisableCompression:  true,
-            TLSHandshakeTimeout: 10 * time.Second,
-        },
     }
-
-    // 最多重试3次
-    maxRetries := 3
-    var lastErr error
     
-    for retry := 0; retry < maxRetries; retry++ {
-        if retry > 0 {
-            // 重试间隔随机化，避免固定间隔
-            time.Sleep(time.Duration(rand.Intn(5)+1) * time.Second)
-        }
-        
-        // 创建自定义的请求
-        req, err := http.NewRequest("GET", feed.URL, nil)
-        if err != nil {
-            lastErr = fmt.Errorf("创建请求失败: %v", err)
-            continue
-        }
-        
-        // 添加更完整的请求头
-        req.Header.Set("User-Agent", getRandomUserAgent())
-        req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-        req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-        req.Header.Set("Connection", "keep-alive")
-        req.Header.Set("Cache-Control", "max-age=0")
-        req.Header.Set("Upgrade-Insecure-Requests", "1")
-        req.Header.Set("Sec-Fetch-Dest", "document")
-        req.Header.Set("Sec-Fetch-Mode", "navigate")
-        req.Header.Set("Sec-Fetch-Site", "none")
-        req.Header.Set("Sec-Fetch-User", "?1")
-        req.Header.Set("DNT", "1")
-        
-        // 如果是 hostloc 域名，添加特殊处理
-        if strings.Contains(feed.URL, "hostloc.com") {
-            req.Header.Set("Referer", "https://hostloc.com/")
-            req.Header.Set("Origin", "https://hostloc.com")
-            // 添加一个随机的 Cookie
-            req.Header.Set("Cookie", fmt.Sprintf("_ga=GA1.%d.%d.%d", 
-                rand.Intn(999999999), 
-                rand.Intn(999999999), 
-                time.Now().Unix()))
-        }
-        
-        // 使用自定义客户端解析 Feed
-        fp.Client = client
-        parsedFeed, err := fp.ParseURL(feed.URL)
-        if err != nil {
-            lastErr = fmt.Errorf("解析Feed失败: %v", err)
-            log.Printf("第 %d 次尝试解析Feed %s失败: %v", retry+1, feed.URL, err)
-            continue
-        }
-        
-        // 成功获取数据，处理 Feed 内容
-        for _, item := range parsedFeed.Items {
-            matchedKeywords := m.matchKeywords(item, feed.Keywords)
-            if len(matchedKeywords) > 0 {
-                log.Printf("发现新项目: %s", item.Title)
-                if err := m.messageHandler(item.Title, item.Link, feed.Group, *item.PublishedParsed, matchedKeywords); err != nil {
-                    log.Printf("发送消息失败: %v", err)
-                } else {
-                    log.Printf("成功发送项目的消息: %s", item.Title)
-                    m.db.MarkAsSent(item.Link)
-                }
-            }
-        }
-        
-        // 如果成功，直接返回
+    // 创建自定义的请求
+    req, err := http.NewRequest("GET", feed.URL, nil)
+    if err != nil {
+        log.Printf("创建请求失败 %s: %v", feed.URL, err)
         return
     }
     
-    // 所有重试都失败后记录最后的错误
-    if lastErr != nil {
-        log.Printf("在 %d 次尝试后仍然无法解析Feed %s: %v", maxRetries, feed.URL, lastErr)
+    // 根据不同的域名使用不同的请求头
+    if strings.Contains(feed.URL, "hostloc.com") {
+        // hostloc 特定的请求头
+        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        req.Header.Set("Accept", "application/rss+xml,application/xml;q=0.9")
+        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+        req.Header.Set("Referer", "https://hostloc.com/forum.php")
+    } else if strings.Contains(feed.URL, "nodeseek.com") {
+        // nodeseek 特定的请求头
+        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        req.Header.Set("Accept", "application/xml,application/rss+xml;q=0.9")
+        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
+        req.Header.Set("Referer", "https://nodeseek.com/")
+    } else {
+        // 其他网站使用通用请求头
+        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        req.Header.Set("Accept", "application/rss+xml,application/xml;q=0.9,*/*;q=0.8")
+        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+    }
+    
+    // 使用自定义客户端解析 Feed
+    fp.Client = client
+    parsedFeed, err := fp.ParseURL(feed.URL)
+    if err != nil {
+        log.Printf("解析Feed %s失败: %v", feed.URL, err)
+        return
+    }
+
+    for _, item := range parsedFeed.Items {
+        matchedKeywords := m.matchKeywords(item, feed.Keywords)
+        if len(matchedKeywords) > 0 {
+            log.Printf("发现新项目: %s", item.Title)
+            if err := m.messageHandler(item.Title, item.Link, feed.Group, *item.PublishedParsed, matchedKeywords); err != nil {
+                log.Printf("发送消息失败: %v", err)
+            } else {
+                log.Printf("成功发送项目的消息: %s", item.Title)
+                m.db.MarkAsSent(item.Link)
+            }
+        }
     }
 }
 
