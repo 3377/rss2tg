@@ -2,27 +2,14 @@ package rss
 
 import (
     "log"
-    "math/rand"
     "net/http"
     "strings"
     "sync"
     "time"
-    "fmt"
 
     "github.com/mmcdole/gofeed"
     "rss2telegram/internal/storage"
 )
-
-var userAgents = []string{
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
-}
-
-func getRandomUserAgent() string {
-    return userAgents[rand.Intn(len(userAgents))]
-}
 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 
@@ -126,25 +113,12 @@ func (m *Manager) checkFeed(feed *Feed) {
         return
     }
     
-    // 根据不同的域名使用不同的请求头
-    if strings.Contains(feed.URL, "hostloc.com") {
-        // hostloc 特定的请求头
-        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        req.Header.Set("Accept", "application/rss+xml,application/xml;q=0.9")
-        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-        req.Header.Set("Referer", "https://hostloc.com/forum.php")
-    } else if strings.Contains(feed.URL, "nodeseek.com") {
-        // nodeseek 特定的请求头
-        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        req.Header.Set("Accept", "application/xml,application/rss+xml;q=0.9")
-        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-        req.Header.Set("Referer", "https://nodeseek.com/")
-    } else {
-        // 其他网站使用通用请求头
-        req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        req.Header.Set("Accept", "application/rss+xml,application/xml;q=0.9,*/*;q=0.8")
-        req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-    }
+    // 添加浏览器标识和其他必要的头信息
+    req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+    req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+    req.Header.Set("Connection", "keep-alive")
+    req.Header.Set("Upgrade-Insecure-Requests", "1")
     
     // 使用自定义客户端解析 Feed
     fp.Client = client
@@ -186,9 +160,4 @@ func (m *Manager) matchKeywords(item *gofeed.Item, keywords []string) []string {
     }
 
     return matched
-}
-
-func init() {
-    // 初始化随机数生成器
-    rand.Seed(time.Now().UnixNano())
 }
