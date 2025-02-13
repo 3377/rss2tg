@@ -6,26 +6,13 @@ import (
     "log"
     "net/url"
     "os"
-    "reflect"
     "strconv"
     "strings"
 
     "gopkg.in/yaml.v2"
 )
 
-type TelegramConfig struct {
-    BotToken string   `yaml:"bot_token"`
-    Users    []string `yaml:"users"`
-    Channels []string `yaml:"channels"`
-}
-
-type RSSConfig struct {
-    URL      string   `yaml:"url"`
-    Interval int      `yaml:"interval"`
-    Keywords []string `yaml:"keywords"`
-    Group    string   `yaml:"group"`
-}
-
+// Config 定义了整个应用的配置结构
 type Config struct {
     Telegram struct {
         BotToken  string   `yaml:"bot_token"`
@@ -33,10 +20,10 @@ type Config struct {
         Channels  []string `yaml:"channels"`
     } `yaml:"telegram"`
     RSS []struct {
-        URLs     []string `yaml:"urls"`
-        Interval int      `yaml:"interval"`
-        Keywords []string `yaml:"keywords"`
-        Group    string   `yaml:"group"`
+        URLs     []string `yaml:"urls"`     // 支持多个URL
+        Interval int      `yaml:"interval"` // 更新间隔（秒）
+        Keywords []string `yaml:"keywords"` // 关键词列表
+        Group    string   `yaml:"group"`    // 分组名称
     } `yaml:"rss"`
 }
 
@@ -205,8 +192,7 @@ func LoadFromEnv() *Config {
 func (c *Config) Save(filename string) error {
     data, err := yaml.Marshal(c)
     if err != nil {
-        return err
+        return fmt.Errorf("序列化配置失败: %v", err)
     }
-
     return ioutil.WriteFile(filename, data, 0644)
 }
