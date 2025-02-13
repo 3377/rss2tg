@@ -173,7 +173,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
         keyword = escapeMarkdown(keyword)
-        boldKeywords[i] = fmt.Sprintf("#%s", formatBold(keyword))
+        boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))  // 转义#号
     }
     
     // 转义时间格式中的点号
@@ -181,7 +181,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     
     text := fmt.Sprintf("%s\n\n🌐 链接: [%s](%s)\n\n🔍 关键词: %s\n\n🏷️ 分组: %s\n\n🕒 时间: %s", 
         formatBold(title),
-        title,
+        escapeMarkdown(title),  // 链接文本也需要转义
         url, 
         strings.Join(boldKeywords, " "), 
         formatBold(group),
@@ -274,22 +274,33 @@ func (b *Bot) reloadConfig() error {
 func (b *Bot) handleStart(chatID int64) {
     helpText := "欢迎使用RSS订阅机器人！\n\n" +
         "主要命令：\n" +
-        "/start \\- 开始使用机器人并查看帮助信息\n" +
-        "/stats \\- 查看推送统计\n" +
-        "/view \\- 查看类命令合集\n" +
-        "/edit \\- 编辑类命令合集\n\n" +
+        "/start - 开始使用机器人并查看帮助信息\n" +
+        "/stats - 查看推送统计\n" +
+        "/view - 查看类命令合集\n" +
+        "/edit - 编辑类命令合集\n\n" +
         "查看类命令（使用 /view 查看）：\n" +
-        "/config \\- 查看当前配置\n" +
-        "/list \\- 列出所有RSS订阅\n" +
-        "/stats \\- 查看推送统计\n" +
-        "/version \\- 获取当前版本信息\n\n" +
+        "/config - 查看当前配置\n" +
+        "/list - 列出所有RSS订阅\n" +
+        "/stats - 查看推送统计\n" +
+        "/version - 获取当前版本信息\n\n" +
         "编辑类命令（使用 /edit 查看）：\n" +
-        "/add \\- 添加RSS订阅\n" +
-        "/edit \\- 编辑RSS订阅\n" +
-        "/delete \\- 删除RSS订阅\n" +
-        "/add\\_all \\- 向所有订阅添加关键词\n" +
-        "/del\\_all \\- 从所有订阅删除关键词"
-    b.sendMessage(chatID, helpText)
+        "/add - 添加RSS订阅\n" +
+        "/edit - 编辑RSS订阅\n" +
+        "/delete - 删除RSS订阅\n" +
+        "/add_all - 向所有订阅添加关键词\n" +
+        "/del_all - 从所有订阅删除关键词"
+    
+    // 转义特殊字符，但保持命令格式
+    helpText = strings.ReplaceAll(helpText, ".", "\\.")
+    helpText = strings.ReplaceAll(helpText, "!", "\\!")
+    helpText = strings.ReplaceAll(helpText, "(", "\\(")
+    helpText = strings.ReplaceAll(helpText, ")", "\\)")
+    
+    msg := tgbotapi.NewMessage(chatID, helpText)
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleView(chatID int64, userID int64) {
@@ -307,7 +318,8 @@ func (b *Bot) handleView(chatID int64, userID int64) {
         ),
     )
 
-    msg := tgbotapi.NewMessage(chatID, text)
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(text))
+    msg.ParseMode = "MarkdownV2"
     msg.ReplyMarkup = keyboard
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
@@ -332,7 +344,8 @@ func (b *Bot) handleEditCommand(chatID int64, userID int64) {
         ),
     )
 
-    msg := tgbotapi.NewMessage(chatID, text)
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(text))
+    msg.ParseMode = "MarkdownV2"
     msg.ReplyMarkup = keyboard
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
@@ -361,21 +374,36 @@ func (b *Bot) handleAdd(chatID int64, userID int64) {
     b.userState[userID] = "add_url"
     message := b.listSubscriptions()
     message += "\n请输入要添加的RSS订阅URL（如需添加多个URL，请用英文逗号分隔）："
-    b.sendMessage(chatID, message)
+    
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleEdit(chatID int64, userID int64) {
     b.userState[userID] = "edit_index"
     message := b.listSubscriptions()
     message += "\n请输入要编辑的RSS订阅编号："
-    b.sendMessage(chatID, message)
+    
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
     message := b.listSubscriptions()
     message += "\n请输入要删除的RSS订阅编号："
-    b.sendMessage(chatID, message)
+    
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleList(chatID int64) {
