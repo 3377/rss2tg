@@ -166,7 +166,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     
     // 转义特殊字符并格式化文本
     title = escapeMarkdown(title)
-    url = escapeMarkdown(url)
+    url = escapeURL(url)  // 使用URL专用的转义函数
     group = escapeMarkdown(group)
     
     // 将匹配的关键词加粗并添加#
@@ -220,12 +220,22 @@ func escapeMarkdown(text string) string {
     text = strings.ReplaceAll(text, "\\", "\\\\")
     specialChars := []string{
         "_", "[", "]", "(", ")", "~", "`", ">", 
-        "#", "+", "-", "=", "|", "{", "}", ".", "!", 
+        "#", "+", "-", "=", "|", "{", "}", "!", 
     }
     for _, char := range specialChars {
         text = strings.ReplaceAll(text, char, "\\"+char)
     }
     return text
+}
+
+// escapeURL 仅转义URL中的特定字符，保持大部分URL字符不变
+func escapeURL(url string) string {
+    // URL中只需要转义少数几个字符
+    url = strings.ReplaceAll(url, "(", "\\(")
+    url = strings.ReplaceAll(url, ")", "\\)")
+    url = strings.ReplaceAll(url, "!", "\\!")
+    url = strings.ReplaceAll(url, "_", "\\_")
+    return url
 }
 
 // formatBold 将文本加粗，同时处理特殊字符
@@ -635,9 +645,9 @@ func (b *Bot) getConfig() string {
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
         // 序号和URLs不需要转义，直接显示
-        config += fmt.Sprintf("%d\\. 📡 URLs:\n", i+1)
+        config += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
-            config += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
+            config += fmt.Sprintf("   %d) %s\n", j+1, escapeURL(url))
         }
         // 关键词和组名需要加粗显示
         keywords := strings.Join(rss.Keywords, ", ")
@@ -653,9 +663,9 @@ func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
         // 序号和URLs不需要转义，直接显示
-        list += fmt.Sprintf("%d\\. 📡 URLs:\n", i+1)
+        list += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
-            list += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
+            list += fmt.Sprintf("   %d) %s\n", j+1, escapeURL(url))
         }
         // 关键词和组名需要加粗显示
         keywords := strings.Join(rss.Keywords, ", ")
