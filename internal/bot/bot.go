@@ -240,7 +240,7 @@ func escapeURL(url string) string {
     url = strings.ReplaceAll(url, "!", "\\!")
     url = strings.ReplaceAll(url, "_", "\\_")
     url = strings.ReplaceAll(url, "-", "\\-")
-    url = strings.ReplaceAll(url, ".", "\\.")
+    // 移除对点号的转义，因为URL中的点号不需要转义
     return url
 }
 
@@ -279,24 +279,23 @@ func (b *Bot) reloadConfig() error {
 func (b *Bot) handleStart(chatID int64) {
     helpText := "欢迎使用RSS订阅机器人！\n\n" +
         "主要命令：\n" +
-        "/start - 开始使用机器人并查看帮助信息\n" +
-        "/stats - 查看推送统计\n" +
-        "/view - 查看类命令合集\n" +
-        "/edit - 编辑类命令合集\n\n" +
+        "/start \\- 开始使用机器人并查看帮助信息\n" +
+        "/stats \\- 查看推送统计\n" +
+        "/view \\- 查看类命令合集\n" +
+        "/edit \\- 编辑类命令合集\n\n" +
         "查看类命令（使用 /view 查看）：\n" +
-        "/config - 查看当前配置\n" +
-        "/list - 列出所有RSS订阅\n" +
-        "/stats - 查看推送统计\n" +
-        "/version - 获取当前版本信息\n\n" +
+        "/config \\- 查看当前配置\n" +
+        "/list \\- 列出所有RSS订阅\n" +
+        "/stats \\- 查看推送统计\n" +
+        "/version \\- 获取当前版本信息\n\n" +
         "编辑类命令（使用 /edit 查看）：\n" +
-        "/add - 添加RSS订阅\n" +
-        "/edit - 编辑RSS订阅\n" +
-        "/delete - 删除RSS订阅\n" +
-        "/add_all - 向所有订阅添加关键词\n" +
-        "/del_all - 从所有订阅删除关键词"
+        "/add \\- 添加RSS订阅\n" +
+        "/edit \\- 编辑RSS订阅\n" +
+        "/delete \\- 删除RSS订阅\n" +
+        "/add_all \\- 向所有订阅添加关键词\n" +
+        "/del_all \\- 从所有订阅删除关键词"
     
     // 转义特殊字符，但保持命令格式
-    helpText = strings.ReplaceAll(helpText, ".", "\\.")
     helpText = strings.ReplaceAll(helpText, "!", "\\!")
     helpText = strings.ReplaceAll(helpText, "(", "\\(")
     helpText = strings.ReplaceAll(helpText, ")", "\\)")
