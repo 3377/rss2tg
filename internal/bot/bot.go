@@ -233,13 +233,14 @@ func escapeMarkdown(text string) string {
 
 // escapeURL 仅转义URL中的特定字符，保持大部分URL字符不变
 func escapeURL(url string) string {
-    // URL中只需要转义少数几个字符
+    // URL中需要转义的字符
+    url = strings.ReplaceAll(url, "\\", "\\\\")  // 先转义反斜杠
+    url = strings.ReplaceAll(url, ".", "\\.")
     url = strings.ReplaceAll(url, "(", "\\(")
     url = strings.ReplaceAll(url, ")", "\\)")
     url = strings.ReplaceAll(url, "!", "\\!")
     url = strings.ReplaceAll(url, "_", "\\_")
     url = strings.ReplaceAll(url, "-", "\\-")
-    // 移除对点号的转义，因为URL中的点号不需要转义
     return url
 }
 
