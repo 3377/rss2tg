@@ -165,9 +165,9 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     pubDateChina := pubDate.In(chinaLoc)
     
     // 转义特殊字符并格式化文本
-    title = escapeMarkdown(title)
+    title = formatBold(escapeMarkdown(title))  // 标题加粗
     url = escapeURL(url)
-    group = escapeMarkdown(group)
+    group = formatBold(escapeMarkdown(group))  // 分组加粗
     
     // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
@@ -176,19 +176,19 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))
     }
     
-    // 格式化时间，不需要转义时间中的连字符
-    timeStr := pubDateChina.Format("2006-01-02 15:04:05")
+    // 格式化时间
+    timeStr := formatBold(escapeMarkdown(pubDateChina.Format("2006-01-02 15:04:05")))  // 时间加粗
     
-    text := fmt.Sprintf("%s\n\n%s *@%s*\n\n%s %s\n\n%s %s\n\n%s %s", 
-        formatBold(title),
+    text := fmt.Sprintf("%s\n\n🌐 %s %s\n\n🔍 %s %s\n\n🏷️ %s %s\n\n🕒 %s %s", 
+        title,
         formatBold("链接:"),
-        url,  // 直接使用@URL并加粗
+        url,
         formatBold("关键词:"),
         strings.Join(boldKeywords, " "), 
         formatBold("分组:"),
-        formatBold(group),
+        group,
         formatBold("时间:"),
-        formatBold(timeStr))  // 将时间加粗
+        timeStr)
     
     log.Printf("发送消息: %s", text)
 
