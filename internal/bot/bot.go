@@ -166,26 +166,30 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     
     // 转义特殊字符并格式化文本
     title = escapeMarkdown(title)
-    url = escapeURL(url)  // 使用URL专用的转义函数
+    url = escapeURL(url)
     group = escapeMarkdown(group)
     
     // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
         keyword = escapeMarkdown(keyword)
-        boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))  // 转义#号
+        boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))
     }
     
-    // 转义时间格式中的点号
-    timeStr := escapeMarkdown(pubDateChina.Format("2006-01-02 15:04:05"))
+    // 格式化时间，不需要转义时间中的连字符
+    timeStr := pubDateChina.Format("2006-01-02 15:04:05")
     
-    text := fmt.Sprintf("%s\n\n🌐 链接: [%s](%s)\n\n🔍 关键词: %s\n\n🏷️ 分组: %s\n\n🕒 时间: %s", 
+    text := fmt.Sprintf("%s\n\n%s [%s](%s)\n\n%s %s\n\n%s %s\n\n%s %s", 
         formatBold(title),
-        escapeMarkdown(title),  // 链接文本也需要转义
+        formatBold("链接:"),
+        title,  // 移除链接文本，直接使用URL
         url, 
+        formatBold("关键词:"),
         strings.Join(boldKeywords, " "), 
+        formatBold("分组:"),
         formatBold(group),
-        formatBold(timeStr))
+        formatBold("时间:"),
+        escapeMarkdown(timeStr))
     
     log.Printf("发送消息: %s", text)
 
@@ -236,6 +240,7 @@ func escapeURL(url string) string {
     url = strings.ReplaceAll(url, "!", "\\!")
     url = strings.ReplaceAll(url, "_", "\\_")
     url = strings.ReplaceAll(url, "-", "\\-")
+    url = strings.ReplaceAll(url, ".", "\\.")
     return url
 }
 
