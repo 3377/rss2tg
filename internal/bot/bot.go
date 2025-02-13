@@ -164,27 +164,28 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     chinaLoc, _ := time.LoadLocation("Asia/Shanghai")
     pubDateChina := pubDate.In(chinaLoc)
     
-    // 转义特殊字符
+    // 转义特殊字符并格式化文本
     title = escapeMarkdown(title)
     url = escapeMarkdown(url)
     group = escapeMarkdown(group)
     
-    // 将匹配的关键词加粗并添加#，同时转义特殊字符
+    // 将匹配的关键词加粗并添加#
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        boldKeywords[i] = "#*" + escapeMarkdown(keyword) + "*"
+        keyword = escapeMarkdown(keyword)
+        boldKeywords[i] = fmt.Sprintf("#%s", formatBold(keyword))
     }
     
     // 转义时间格式中的点号
     timeStr := escapeMarkdown(pubDateChina.Format("2006-01-02 15:04:05"))
     
-    text := fmt.Sprintf("*%s*\n\n*🌐 链接：* [%s](%s)\n\n*🔍 关键词：* %s\n\n*🏷️ 分组：* *%s*\n\n*🕒 时间：* *%s*", 
-        title, 
+    text := fmt.Sprintf("%s\n\n🌐 链接: [%s](%s)\n\n🔍 关键词: %s\n\n🏷️ 分组: %s\n\n🕒 时间: %s", 
+        formatBold(title),
         title,
         url, 
         strings.Join(boldKeywords, " "), 
-        group, 
-        timeStr)
+        formatBold(group),
+        formatBold(timeStr))
     
     log.Printf("发送消息: %s", text)
 
@@ -216,16 +217,27 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
 // escapeMarkdown 转义 MarkdownV2 格式中的特殊字符
 func escapeMarkdown(text string) string {
     // 定义需要转义的特殊字符，注意顺序很重要
-    // 先转义反斜杠，再转义其他字符
     text = strings.ReplaceAll(text, "\\", "\\\\")
     specialChars := []string{
-        "_", "*", "[", "]", "(", ")", "~", "`", ">", 
+        "_", "[", "]", "(", ")", "~", "`", ">", 
         "#", "+", "-", "=", "|", "{", "}", ".", "!", 
     }
     for _, char := range specialChars {
         text = strings.ReplaceAll(text, char, "\\"+char)
     }
     return text
+}
+
+// formatBold 将文本加粗，同时处理特殊字符
+func formatBold(text string) string {
+    if text == "" {
+        return "*无*"
+    }
+    // 先转义特殊字符
+    text = escapeMarkdown(text)
+    // 如果文本中已经包含星号，需要特别处理
+    text = strings.ReplaceAll(text, "*", "\\*")
+    return "*" + text + "*"
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) {
@@ -617,18 +629,22 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
 
 func (b *Bot) getConfig() string {
     config := "当前配置信息：\n"
+    // 用户和频道不需要加粗，直接显示
     config += fmt.Sprintf("用户: %v\n", b.users)
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        config += fmt.Sprintf("%d\\. 📡  URLs:\n", i+1)
+        // 序号和URLs不需要转义，直接显示
+        config += fmt.Sprintf("%d\\. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
             config += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
         }
-        config += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%s*\n   🏷️  组名: *%s*\n", 
+        // 关键词和组名需要加粗显示
+        keywords := strings.Join(rss.Keywords, ", ")
+        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            escapeMarkdown(strings.Join(rss.Keywords, ", ")), 
-            escapeMarkdown(rss.Group))
+            formatBold(keywords),
+            formatBold(rss.Group))
     }
     return config
 }
@@ -636,21 +652,27 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        list += fmt.Sprintf("%d\\. 📡  URLs:\n", i+1)
+        // 序号和URLs不需要转义，直接显示
+        list += fmt.Sprintf("%d\\. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
             list += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
         }
-        list += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%s*\n   🏷️  组名: *%s*\n", 
+        // 关键词和组名需要加粗显示
+        keywords := strings.Join(rss.Keywords, ", ")
+        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            escapeMarkdown(strings.Join(rss.Keywords, ", ")), 
-            escapeMarkdown(rss.Group))
+            formatBold(keywords),
+            formatBold(rss.Group))
     }
     return list
 }
 
 func (b *Bot) getStats() string {
     dailyCount, weeklyCount, totalCount := b.stats.GetMessageCounts()
-    return fmt.Sprintf("推送统计:\n📊  今日推送: *%d*\n📈  本周推送: *%d*\n📋  总计推送: *%d*", dailyCount, weeklyCount, totalCount)
+    return fmt.Sprintf("推送统计:\n📊 今日推送: %s\n📈 本周推送: %s\n📋 总计推送: %s", 
+        formatBold(strconv.Itoa(dailyCount)),
+        formatBold(strconv.Itoa(weeklyCount)),
+        formatBold(strconv.Itoa(totalCount)))
 }
 
 func (b *Bot) UpdateConfig(cfg *config.Config) {
