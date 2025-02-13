@@ -197,9 +197,11 @@ func LoadFromEnv() *Config {
         config.RSS = make([]RSSEntry, len(urlGroups))
 
         for i, urlGroup := range urlGroups {
-            config.RSS[i].URLs = strings.Split(strings.TrimSpace(urlGroup), ",")
-            config.RSS[i].Interval = 300 // 默认5分钟
-            config.RSS[i].Group = "默认分组"
+            config.RSS[i] = RSSEntry{
+                URLs:     strings.Split(strings.TrimSpace(urlGroup), ","),
+                Interval: 300, // 默认5分钟
+                Group:    "默认分组",
+            }
             
             // 尝试加载对应的关键词
             if keywords := os.Getenv(fmt.Sprintf("RSS_KEYWORDS_%d", i)); keywords != "" {

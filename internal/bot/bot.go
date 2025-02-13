@@ -393,12 +393,10 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 cleanURLs = append(cleanURLs, url)
             }
         }
-        b.config.RSS = append(b.config.RSS, struct {
-            URLs     []string `yaml:"urls"`
-            Interval int      `yaml:"interval"`
-            Keywords []string `yaml:"keywords"`
-            Group    string   `yaml:"group"`
-        }{URLs: cleanURLs})
+        newEntry := config.RSSEntry{
+            URLs: cleanURLs,
+        }
+        b.config.RSS = append(b.config.RSS, newEntry)
         b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
         interval, err := strconv.Atoi(text)
