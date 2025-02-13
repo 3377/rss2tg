@@ -175,13 +175,16 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = "#*" + escapeMarkdown(keyword) + "*"
     }
     
+    // 转义时间格式中的点号
+    timeStr := escapeMarkdown(pubDateChina.Format("2006-01-02 15:04:05"))
+    
     text := fmt.Sprintf("*%s*\n\n*🌐 链接：* [%s](%s)\n\n*🔍 关键词：* %s\n\n*🏷️ 分组：* *%s*\n\n*🕒 时间：* *%s*", 
         title, 
         title,
         url, 
         strings.Join(boldKeywords, " "), 
         group, 
-        pubDateChina.Format("2006-01-02 15:04:05"))
+        timeStr)
     
     log.Printf("发送消息: %s", text)
 
@@ -212,7 +215,13 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
 
 // escapeMarkdown 转义 MarkdownV2 格式中的特殊字符
 func escapeMarkdown(text string) string {
-    specialChars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+    // 定义需要转义的特殊字符，注意顺序很重要
+    // 先转义反斜杠，再转义其他字符
+    text = strings.ReplaceAll(text, "\\", "\\\\")
+    specialChars := []string{
+        "_", "*", "[", "]", "(", ")", "~", "`", ">", 
+        "#", "+", "-", "=", "|", "{", "}", ".", "!", 
+    }
     for _, char := range specialChars {
         text = strings.ReplaceAll(text, char, "\\"+char)
     }
