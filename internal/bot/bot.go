@@ -235,6 +235,7 @@ func escapeURL(url string) string {
     url = strings.ReplaceAll(url, ")", "\\)")
     url = strings.ReplaceAll(url, "!", "\\!")
     url = strings.ReplaceAll(url, "_", "\\_")
+    url = strings.ReplaceAll(url, "-", "\\-")
     return url
 }
 
@@ -251,6 +252,9 @@ func formatBold(text string) string {
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) {
+    // 转义特殊字符
+    text = escapeMarkdown(text)
+    
     msg := tgbotapi.NewMessage(chatID, text)
     msg.ParseMode = "MarkdownV2"
     if _, err := b.api.Send(msg); err != nil {
@@ -268,26 +272,23 @@ func (b *Bot) reloadConfig() error {
 }
 
 func (b *Bot) handleStart(chatID int64) {
-    helpText := `欢迎使用RSS订阅机器人！
-
-主要命令：
-/start - 开始使用机器人并查看帮助信息
-/stats - 查看推送统计
-/view - 查看类命令合集
-/edit - 编辑类命令合集
-
-查看类命令（使用 /view 查看）：
-/config - 查看当前配置
-/list - 列出所有RSS订阅
-/stats - 查看推送统计
-/version - 获取当前版本信息
-
-编辑类命令（使用 /edit 查看）：
-/add - 添加RSS订阅
-/edit - 编辑RSS订阅
-/delete - 删除RSS订阅
-/add_all - 向所有订阅添加关键词
-/del_all - 从所有订阅删除关键词`
+    helpText := "欢迎使用RSS订阅机器人！\n\n" +
+        "主要命令：\n" +
+        "/start \\- 开始使用机器人并查看帮助信息\n" +
+        "/stats \\- 查看推送统计\n" +
+        "/view \\- 查看类命令合集\n" +
+        "/edit \\- 编辑类命令合集\n\n" +
+        "查看类命令（使用 /view 查看）：\n" +
+        "/config \\- 查看当前配置\n" +
+        "/list \\- 列出所有RSS订阅\n" +
+        "/stats \\- 查看推送统计\n" +
+        "/version \\- 获取当前版本信息\n\n" +
+        "编辑类命令（使用 /edit 查看）：\n" +
+        "/add \\- 添加RSS订阅\n" +
+        "/edit \\- 编辑RSS订阅\n" +
+        "/delete \\- 删除RSS订阅\n" +
+        "/add\\_all \\- 向所有订阅添加关键词\n" +
+        "/del\\_all \\- 从所有订阅删除关键词"
     b.sendMessage(chatID, helpText)
 }
 
