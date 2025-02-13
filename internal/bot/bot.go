@@ -179,17 +179,16 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 格式化时间，不需要转义时间中的连字符
     timeStr := pubDateChina.Format("2006-01-02 15:04:05")
     
-    text := fmt.Sprintf("%s\n\n%s [%s](%s)\n\n%s %s\n\n%s %s\n\n%s %s", 
+    text := fmt.Sprintf("%s\n\n%s *@%s*\n\n%s %s\n\n%s %s\n\n%s %s", 
         formatBold(title),
         formatBold("链接:"),
-        title,  // 移除链接文本，直接使用URL
-        url, 
+        url,  // 直接使用@URL并加粗
         formatBold("关键词:"),
         strings.Join(boldKeywords, " "), 
         formatBold("分组:"),
         formatBold(group),
         formatBold("时间:"),
-        escapeMarkdown(timeStr))
+        formatBold(timeStr))  // 将时间加粗
     
     log.Printf("发送消息: %s", text)
 
