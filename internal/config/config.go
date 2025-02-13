@@ -19,12 +19,51 @@ type Config struct {
         Users     []string `yaml:"users"`
         Channels  []string `yaml:"channels"`
     } `yaml:"telegram"`
-    RSS []struct {
-        URLs     []string `yaml:"urls"`     // 支持多个URL
-        Interval int      `yaml:"interval"` // 更新间隔（秒）
-        Keywords []string `yaml:"keywords"` // 关键词列表
-        Group    string   `yaml:"group"`    // 分组名称
-    } `yaml:"rss"`
+    RSS []RSSEntry `yaml:"rss"`
+}
+
+// RSSEntry 定义RSS配置项
+type RSSEntry struct {
+    URLs     []string `yaml:"urls,omitempty"`     // 新版本：支持多个URL
+    URL      string   `yaml:"url,omitempty"`      // 旧版本：单个URL
+    Interval int      `yaml:"interval"` // 更新间隔（秒）
+    Keywords []string `yaml:"keywords"` // 关键词列表
+    Group    string   `yaml:"group"`    // 分组名称
+}
+
+// UnmarshalYAML 实现自定义的YAML解析逻辑，支持新旧两种格式
+func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
+    // 定义一个临时结构体来解析YAML
+    type tempRSSEntry RSSEntry
+    if err := unmarshal((*tempRSSEntry)(r)); err != nil {
+        return err
+    }
+
+    // 如果存在旧版本的单个URL，将其转换为URLs数组
+    if r.URL != "" {
+        if len(r.URLs) == 0 {
+            r.URLs = []string{r.URL}
+        }
+        r.URL = "" // 清空旧字段
+    }
+
+    return nil
+}
+
+// MarshalYAML 实现自定义的YAML序列化逻辑
+func (r RSSEntry) MarshalYAML() (interface{}, error) {
+    // 始终使用新格式序列化
+    return struct {
+        URLs     []string `yaml:"urls"`
+        Interval int      `yaml:"interval"`
+        Keywords []string `yaml:"keywords"`
+        Group    string   `yaml:"group"`
+    }{
+        URLs:     r.URLs,
+        Interval: r.Interval,
+        Keywords: r.Keywords,
+        Group:    r.Group,
+    }, nil
 }
 
 func (c *Config) Equal(other *Config) bool {
@@ -97,14 +136,14 @@ func validateAndCleanConfig(config *Config) error {
     }
 
     // 验证和清理RSS配置
-    for i, rss := range config.RSS {
+    for i := range config.RSS {
         // 验证URLs
-        if len(rss.URLs) == 0 {
+        if len(config.RSS[i].URLs) == 0 {
             return fmt.Errorf("RSS #%d: URLs为空", i+1)
         }
         
         // 验证每个URL的格式
-        for j, urlStr := range rss.URLs {
+        for j, urlStr := range config.RSS[i].URLs {
             urlStr = strings.TrimSpace(urlStr)
             if urlStr == "" {
                 return fmt.Errorf("RSS #%d: URL #%d 为空", i+1, j+1)
@@ -117,18 +156,18 @@ func validateAndCleanConfig(config *Config) error {
         }
 
         // 设置默认间隔时间
-        if rss.Interval <= 0 {
+        if config.RSS[i].Interval <= 0 {
             config.RSS[i].Interval = 300 // 默认5分钟
         }
 
         // 设置默认分组
-        if rss.Group == "" {
+        if config.RSS[i].Group == "" {
             config.RSS[i].Group = "默认分组"
         }
 
         // 清理关键词列表
         cleanKeywords := make([]string, 0)
-        for _, keyword := range rss.Keywords {
+        for _, keyword := range config.RSS[i].Keywords {
             keyword = strings.TrimSpace(keyword)
             if keyword != "" {
                 cleanKeywords = append(cleanKeywords, keyword)
@@ -155,12 +194,7 @@ func LoadFromEnv() *Config {
     // 加载RSS配置
     if rssURLs := os.Getenv("RSS_URLS"); rssURLs != "" {
         urlGroups := strings.Split(rssURLs, ";") // 使用分号分隔不同的RSS组
-        config.RSS = make([]struct {
-            URLs     []string `yaml:"urls"`
-            Interval int      `yaml:"interval"`
-            Keywords []string `yaml:"keywords"`
-            Group    string   `yaml:"group"`
-        }, len(urlGroups))
+        config.RSS = make([]RSSEntry, len(urlGroups))
 
         for i, urlGroup := range urlGroups {
             config.RSS[i].URLs = strings.Split(strings.TrimSpace(urlGroup), ",")
