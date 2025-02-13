@@ -164,14 +164,20 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     chinaLoc, _ := time.LoadLocation("Asia/Shanghai")
     pubDateChina := pubDate.In(chinaLoc)
     
-    // 将匹配的关键词加粗并添加#
+    // 转义特殊字符
+    title = escapeMarkdown(title)
+    url = escapeMarkdown(url)
+    group = escapeMarkdown(group)
+    
+    // 将匹配的关键词加粗并添加#，同时转义特殊字符
     boldKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        boldKeywords[i] = "#*" + keyword + "*"
+        boldKeywords[i] = "#*" + escapeMarkdown(keyword) + "*"
     }
     
-    text := fmt.Sprintf("*%s*\n\n*🌐 链接：* *%s*\n\n*🔍 关键词：* %s\n\n*🏷️ 分组：* *%s*\n\n*🕒 时间：* *%s*", 
+    text := fmt.Sprintf("*%s*\n\n*🌐 链接：* [%s](%s)\n\n*🔍 关键词：* %s\n\n*🏷️ 分组：* *%s*\n\n*🕒 时间：* *%s*", 
         title, 
+        title,
         url, 
         strings.Join(boldKeywords, " "), 
         group, 
@@ -181,7 +187,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
 
     for _, userID := range b.users {
         msg := tgbotapi.NewMessage(userID, text)
-        msg.ParseMode = "Markdown"
+        msg.ParseMode = "MarkdownV2"
         if _, err := b.api.Send(msg); err != nil {
             log.Printf("发送消息给用户 %d 失败: %v", userID, err)
         } else {
@@ -192,7 +198,7 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
 
     for _, channel := range b.channels {
         msg := tgbotapi.NewMessageToChannel(channel, text)
-        msg.ParseMode = "Markdown"
+        msg.ParseMode = "MarkdownV2"
         if _, err := b.api.Send(msg); err != nil {
             log.Printf("发送消息到频道 %s 失败: %v", channel, err)
         } else {
@@ -202,6 +208,26 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     }
 
     return nil
+}
+
+// escapeMarkdown 转义 MarkdownV2 格式中的特殊字符
+func escapeMarkdown(text string) string {
+    specialChars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+    for _, char := range specialChars {
+        text = strings.ReplaceAll(text, char, "\\"+char)
+    }
+    return text
+}
+
+func (b *Bot) sendMessage(chatID int64, text string) {
+    // 转义特殊字符
+    text = escapeMarkdown(text)
+    
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
 }
 
 func (b *Bot) reloadConfig() error {
@@ -393,10 +419,10 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 cleanURLs = append(cleanURLs, url)
             }
         }
-        newEntry := config.RSSEntry{
+        // 创建新的RSSEntry并添加到配置中
+        b.config.RSS = append(b.config.RSS, config.RSSEntry{
             URLs: cleanURLs,
-        }
-        b.config.RSS = append(b.config.RSS, newEntry)
+        })
         b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
         interval, err := strconv.Atoi(text)
@@ -404,24 +430,42 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             b.sendMessage(chatID, "无效的间隔时间，请输入一个整数。")
             return
         }
-        b.config.RSS[len(b.config.RSS)-1].Interval = interval
-        b.userState[userID] = "add_keywords"
-        b.sendMessage(chatID, "请输入关键词（用空格分隔，如果没有可以直接输入1）：")
-    case "add_keywords":
-        if text != "1" {
-            keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
-            b.config.RSS[len(b.config.RSS)-1].Keywords = keywords
-        }
-        b.userState[userID] = "add_group"
-        b.sendMessage(chatID, "请输入组名：")
-    case "add_group":
-        b.config.RSS[len(b.config.RSS)-1].Group = text
-        delete(b.userState, userID)
-        if err := b.config.Save(b.configFile); err != nil {
-            b.sendMessage(chatID, "添加订阅成功，但保存配置失败。")
+        lastIndex := len(b.config.RSS) - 1
+        if lastIndex >= 0 {
+            b.config.RSS[lastIndex].Interval = interval
+            b.userState[userID] = "add_keywords"
+            b.sendMessage(chatID, "请输入关键词（用空格分隔，如果没有可以直接输入1）：")
         } else {
-            b.sendMessage(chatID, "成功添加RSS订阅。")
-            b.updateRSSHandler()
+            b.sendMessage(chatID, "添加订阅失败：找不到要编辑的订阅")
+            delete(b.userState, userID)
+        }
+    case "add_keywords":
+        lastIndex := len(b.config.RSS) - 1
+        if lastIndex >= 0 {
+            if text != "1" {
+                keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
+                b.config.RSS[lastIndex].Keywords = keywords
+            }
+            b.userState[userID] = "add_group"
+            b.sendMessage(chatID, "请输入组名：")
+        } else {
+            b.sendMessage(chatID, "添加订阅失败：找不到要编辑的订阅")
+            delete(b.userState, userID)
+        }
+    case "add_group":
+        lastIndex := len(b.config.RSS) - 1
+        if lastIndex >= 0 {
+            b.config.RSS[lastIndex].Group = text
+            delete(b.userState, userID)
+            if err := b.config.Save(b.configFile); err != nil {
+                b.sendMessage(chatID, "添加订阅成功，但保存配置失败。")
+            } else {
+                b.sendMessage(chatID, "成功添加RSS订阅。")
+                b.updateRSSHandler()
+            }
+        } else {
+            b.sendMessage(chatID, "添加订阅失败：找不到要编辑的订阅")
+            delete(b.userState, userID)
         }
     case "edit_index":
         index, err := strconv.Atoi(text)
@@ -562,25 +606,20 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
     }
 }
 
-func (b *Bot) sendMessage(chatID int64, text string) {
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "Markdown"
-    if _, err := b.api.Send(msg); err != nil {
-        log.Printf("发送消息失败: %v", err)
-    }
-}
-
 func (b *Bot) getConfig() string {
     config := "当前配置信息：\n"
     config += fmt.Sprintf("用户: %v\n", b.users)
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        config += fmt.Sprintf("%d. 📡  URLs:\n", i+1)
+        config += fmt.Sprintf("%d\\. 📡  URLs:\n", i+1)
         for j, url := range rss.URLs {
-            config += fmt.Sprintf("   %d) %s\n", j+1, url)
+            config += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
         }
-        config += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", rss.Interval, rss.Keywords, rss.Group)
+        config += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%s*\n   🏷️  组名: *%s*\n", 
+            rss.Interval, 
+            escapeMarkdown(strings.Join(rss.Keywords, ", ")), 
+            escapeMarkdown(rss.Group))
     }
     return config
 }
@@ -588,11 +627,14 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        list += fmt.Sprintf("%d. 📡  URLs:\n", i+1)
+        list += fmt.Sprintf("%d\\. 📡  URLs:\n", i+1)
         for j, url := range rss.URLs {
-            list += fmt.Sprintf("   %d) %s\n", j+1, url)
+            list += fmt.Sprintf("   %d\\) %s\n", j+1, escapeMarkdown(url))
         }
-        list += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", rss.Interval, rss.Keywords, rss.Group)
+        list += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%s*\n   🏷️  组名: *%s*\n", 
+            rss.Interval, 
+            escapeMarkdown(strings.Join(rss.Keywords, ", ")), 
+            escapeMarkdown(rss.Group))
     }
     return list
 }
