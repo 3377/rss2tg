@@ -220,7 +220,7 @@ func escapeMarkdown(text string) string {
     text = strings.ReplaceAll(text, "\\", "\\\\")
     specialChars := []string{
         "_", "[", "]", "(", ")", "~", "`", ">", 
-        "#", "+", "-", "=", "|", "{", "}", "!", 
+        "#", "+", "-", "=", "|", "{", "}", ".", "!", 
     }
     for _, char := range specialChars {
         text = strings.ReplaceAll(text, char, "\\"+char)
@@ -251,9 +251,6 @@ func formatBold(text string) string {
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) {
-    // 转义特殊字符
-    text = escapeMarkdown(text)
-    
     msg := tgbotapi.NewMessage(chatID, text)
     msg.ParseMode = "MarkdownV2"
     if _, err := b.api.Send(msg); err != nil {
