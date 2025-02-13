@@ -1,4 +1,4 @@
-module rss2telegram
+module rss2tg
 
 go 1.19
 

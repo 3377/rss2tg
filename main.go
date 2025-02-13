@@ -5,11 +5,11 @@ import (
     "os"
     "time"
 
-    "rss2telegram/internal/bot"
-    "rss2telegram/internal/config"
-    "rss2telegram/internal/rss"
-    "rss2telegram/internal/storage"
-    "rss2telegram/internal/stats"
+    "rss2tg/internal/bot"
+    "rss2tg/internal/config"
+    "rss2tg/internal/rss"
+    "rss2tg/internal/storage"
+    "rss2tg/internal/stats"
 )
 
 type App struct {
@@ -28,7 +28,7 @@ func NewApp(cfg *config.Config, db *storage.Storage, stats *stats.Stats) (*App, 
     rssConfigs := make([]rss.Config, len(cfg.RSS))
     for i, rssCfg := range cfg.RSS {
         rssConfigs[i] = rss.Config{
-            URL:      rssCfg.URL,
+            URLs:     rssCfg.URLs,
             Interval: rssCfg.Interval,
             Keywords: rssCfg.Keywords,
             Group:    rssCfg.Group,
@@ -59,7 +59,7 @@ func (app *App) updateRSS() {
     rssConfigs := make([]rss.Config, len(app.config.RSS))
     for i, rssCfg := range app.config.RSS {
         rssConfigs[i] = rss.Config{
-            URL:      rssCfg.URL,
+            URLs:     rssCfg.URLs,
             Interval: rssCfg.Interval,
             Keywords: rssCfg.Keywords,
             Group:    rssCfg.Group,

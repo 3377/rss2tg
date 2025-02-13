@@ -8,7 +8,7 @@ import (
     "time"
 
     "github.com/mmcdole/gofeed"
-    "rss2telegram/internal/storage"
+    "rss2tg/internal/storage"
 )
 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error

@@ -11,9 +11,9 @@ import (
     "time"
 
     tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-    "rss2telegram/internal/config"
-    "rss2telegram/internal/storage"
-    "rss2telegram/internal/stats"
+    "rss2tg/internal/config"
+    "rss2tg/internal/storage"
+    "rss2tg/internal/stats"
 )
 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
