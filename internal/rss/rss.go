@@ -21,7 +21,7 @@ type Manager struct {
 }
 
 type Feed struct {
-    URL      string
+    URLs     []string
     Interval time.Duration
     Keywords []string
     Group    string
@@ -30,7 +30,7 @@ type Feed struct {
 }
 
 type Config struct {
-    URL      string
+    URLs     []string
     Interval int
     Keywords []string
     Group    string
@@ -63,7 +63,7 @@ func (m *Manager) UpdateFeeds(configs []Config) {
     m.feeds = make([]*Feed, len(configs))
     for i, config := range configs {
         m.feeds[i] = &Feed{
-            URL:      config.URL,
+            URLs:     config.URLs,
             Interval: time.Duration(config.Interval) * time.Second,
             Keywords: config.Keywords,
             Group:    config.Group,
@@ -79,7 +79,6 @@ func (m *Manager) UpdateFeeds(configs []Config) {
 
 func (m *Manager) Start() {
     log.Println("RSS管理器已启动")
-    // 实际的轮询现在在UpdateFeeds中处理
 }
 
 func (m *Manager) pollFeed(feed *Feed) {
@@ -89,16 +88,18 @@ func (m *Manager) pollFeed(feed *Feed) {
     for {
         select {
         case <-feed.ticker.C:
-            log.Printf("检查feed: %s", feed.URL)
-            m.checkFeed(feed)
+            for _, url := range feed.URLs {
+                log.Printf("检查feed: %s", url)
+                m.checkFeed(feed, url)
+            }
         case <-feed.stopChan:
-            log.Printf("停止feed轮询器: %s", feed.URL)
+            log.Printf("停止feed轮询器: %v", feed.URLs)
             return
         }
     }
 }
 
-func (m *Manager) checkFeed(feed *Feed) {
+func (m *Manager) checkFeed(feed *Feed, url string) {
     fp := gofeed.NewParser()
     
     // 创建自定义的 HTTP 客户端
@@ -107,9 +108,9 @@ func (m *Manager) checkFeed(feed *Feed) {
     }
     
     // 创建自定义的请求
-    req, err := http.NewRequest("GET", feed.URL, nil)
+    req, err := http.NewRequest("GET", url, nil)
     if err != nil {
-        log.Printf("创建请求失败 %s: %v", feed.URL, err)
+        log.Printf("创建请求失败 %s: %v", url, err)
         return
     }
     
@@ -122,9 +123,9 @@ func (m *Manager) checkFeed(feed *Feed) {
     
     // 使用自定义客户端解析 Feed
     fp.Client = client
-    parsedFeed, err := fp.ParseURL(feed.URL)
+    parsedFeed, err := fp.ParseURL(url)
     if err != nil {
-        log.Printf("解析Feed %s失败: %v", feed.URL, err)
+        log.Printf("解析Feed %s失败: %v", url, err)
         return
     }
 

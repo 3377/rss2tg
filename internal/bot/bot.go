@@ -285,17 +285,27 @@ func (b *Bot) handleEditCommand(chatID int64, userID int64) {
 }
 
 func (b *Bot) handleConfig(chatID int64) {
+    log.Printf("正在处理查看配置请求，chatID: %d", chatID)
     if err := b.reloadConfig(); err != nil {
-        b.sendMessage(chatID, "加载配置时出错：" + err.Error())
+        log.Printf("加载配置失败: %v", err)
+        b.sendMessage(chatID, fmt.Sprintf("加载配置时出错：%v\n请检查配置文件格式是否正确。", err))
         return
     }
-    b.sendMessage(chatID, b.getConfig())
+    
+    config := b.getConfig()
+    if config == "" {
+        b.sendMessage(chatID, "当前没有配置信息或配置为空")
+        return
+    }
+    
+    b.sendMessage(chatID, config)
+    log.Printf("成功发送配置信息到chatID: %d", chatID)
 }
 
 func (b *Bot) handleAdd(chatID int64, userID int64) {
     b.userState[userID] = "add_url"
     message := b.listSubscriptions()
-    message += "\n请输入要添加的RSS订阅URL："
+    message += "\n请输入要添加的RSS订阅URL（如需添加多个URL，请用英文逗号分隔）："
     b.sendMessage(chatID, message)
 }
 
@@ -314,11 +324,21 @@ func (b *Bot) handleDelete(chatID int64, userID int64) {
 }
 
 func (b *Bot) handleList(chatID int64) {
+    log.Printf("正在处理列表请求，chatID: %d", chatID)
     if err := b.reloadConfig(); err != nil {
-        b.sendMessage(chatID, "加载配置时出错：" + err.Error())
+        log.Printf("加载配置失败: %v", err)
+        b.sendMessage(chatID, fmt.Sprintf("加载配置时出错：%v\n请检查配置文件格式是否正确。", err))
         return
     }
-    b.sendMessage(chatID, b.listSubscriptions())
+    
+    list := b.listSubscriptions()
+    if list == "" {
+        b.sendMessage(chatID, "当前没有RSS订阅")
+        return
+    }
+    
+    b.sendMessage(chatID, list)
+    log.Printf("成功发送订阅列表到chatID: %d", chatID)
 }
 
 func (b *Bot) handleStats(chatID int64) {
@@ -364,12 +384,21 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         }
     case "add_url":
         b.userState[userID] = "add_interval"
+        urls := strings.Split(text, ",")
+        // 清理URL列表
+        cleanURLs := make([]string, 0)
+        for _, url := range urls {
+            url = strings.TrimSpace(url)
+            if url != "" {
+                cleanURLs = append(cleanURLs, url)
+            }
+        }
         b.config.RSS = append(b.config.RSS, struct {
-            URL      string   `yaml:"url"`
+            URLs     []string `yaml:"urls"`
             Interval int      `yaml:"interval"`
             Keywords []string `yaml:"keywords"`
             Group    string   `yaml:"group"`
-        }{URL: text})
+        }{URLs: cleanURLs})
         b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
         interval, err := strconv.Atoi(text)
@@ -404,7 +433,8 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             return
         }
         b.userState[userID] = fmt.Sprintf("edit_url_%d", index-1)
-        b.sendMessage(chatID, fmt.Sprintf("当前URL为：%s\n请输入新的URL（如不修改请输入1）：", b.config.RSS[index-1].URL))
+        b.sendMessage(chatID, fmt.Sprintf("当前URL列表为：\n%s\n请输入新的URL列表（多个URL用英文逗号分隔，如不修改请输入1）：", 
+            strings.Join(b.config.RSS[index-1].URLs, "\n")))
     case "delete":
         index, err := strconv.Atoi(text)
         if err != nil || index < 1 || index > len(b.config.RSS) {
@@ -417,7 +447,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         if err := b.config.Save(b.configFile); err != nil {
             b.sendMessage(chatID, "删除订阅成功，但保存配置失败。")
         } else {
-            b.sendMessage(chatID, fmt.Sprintf("成功删除订阅: %s", deletedRSS.URL))
+            b.sendMessage(chatID, fmt.Sprintf("成功删除订阅: %v", deletedRSS.URLs))
             b.updateRSSHandler()
         }
         delete(b.userState, userID)
@@ -485,7 +515,16 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         if strings.HasPrefix(b.userState[userID], "edit_url_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_url_"))
             if text != "1" {
-                b.config.RSS[index].URL = text
+                urls := strings.Split(text, ",")
+                // 清理URL列表
+                cleanURLs := make([]string, 0)
+                for _, url := range urls {
+                    url = strings.TrimSpace(url)
+                    if url != "" {
+                        cleanURLs = append(cleanURLs, url)
+                    }
+                }
+                b.config.RSS[index].URLs = cleanURLs
             }
             b.userState[userID] = fmt.Sprintf("edit_interval_%d", index)
             b.sendMessage(chatID, fmt.Sprintf("当前间隔为：%d秒\n请输入新的间隔时间（秒）如不修改请输入1）：", b.config.RSS[index].Interval))
@@ -539,7 +578,11 @@ func (b *Bot) getConfig() string {
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        config += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
+        config += fmt.Sprintf("%d. 📡  URLs:\n", i+1)
+        for j, url := range rss.URLs {
+            config += fmt.Sprintf("   %d) %s\n", j+1, url)
+        }
+        config += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", rss.Interval, rss.Keywords, rss.Group)
     }
     return config
 }
@@ -547,7 +590,11 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        list += fmt.Sprintf("%d. 📡  URL: %s\n   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", i+1, rss.URL, rss.Interval, rss.Keywords, rss.Group)
+        list += fmt.Sprintf("%d. 📡  URLs:\n", i+1)
+        for j, url := range rss.URLs {
+            list += fmt.Sprintf("   %d) %s\n", j+1, url)
+        }
+        list += fmt.Sprintf("   ⏱️  间隔: %d秒\n   🔑  关键词: *%v*\n   🏷️  组名: *%s*\n", rss.Interval, rss.Keywords, rss.Group)
     }
     return list
 }
