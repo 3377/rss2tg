@@ -160,45 +160,78 @@ func (b *Bot) Start() {
     }
 }
 
+// escapeMarkdownV2Text 转义普通文本中的特殊字符
+func escapeMarkdownV2Text(text string) string {
+    // 按照 Telegram MarkdownV2 格式要求转义特殊字符
+    // 参考: https://core.telegram.org/bots/api#markdownv2-style
+    text = strings.ReplaceAll(text, "\\", "\\\\") // 必须首先转义反斜杠
+    text = strings.ReplaceAll(text, "_", "\\_")
+    text = strings.ReplaceAll(text, "*", "\\*")
+    text = strings.ReplaceAll(text, "[", "\\[")
+    text = strings.ReplaceAll(text, "]", "\\]")
+    text = strings.ReplaceAll(text, "(", "\\(")
+    text = strings.ReplaceAll(text, ")", "\\)")
+    text = strings.ReplaceAll(text, "~", "\\~")
+    text = strings.ReplaceAll(text, "`", "\\`")
+    text = strings.ReplaceAll(text, ">", "\\>")
+    text = strings.ReplaceAll(text, "#", "\\#")
+    text = strings.ReplaceAll(text, "+", "\\+")
+    text = strings.ReplaceAll(text, "-", "\\-")
+    text = strings.ReplaceAll(text, "=", "\\=")
+    text = strings.ReplaceAll(text, "|", "\\|")
+    text = strings.ReplaceAll(text, "{", "\\{")
+    text = strings.ReplaceAll(text, "}", "\\}")
+    text = strings.ReplaceAll(text, ".", "\\.")
+    text = strings.ReplaceAll(text, "!", "\\!")
+    return text
+}
+
+// formatBoldText 格式化加粗文本
+func formatBoldText(text string) string {
+    if text == "" {
+        return "*无*"
+    }
+    return "*" + escapeMarkdownV2Text(text) + "*"
+}
+
 func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKeywords []string) error {
     chinaLoc, _ := time.LoadLocation("Asia/Shanghai")
     pubDateChina := pubDate.In(chinaLoc)
     
-    // 转义特殊字符并格式化文本
-    // 标题只需要转义 * 和 [ ] 这些真正需要转义的字符
-    title = strings.ReplaceAll(title, "*", "\\*")
-    title = strings.ReplaceAll(title, "[", "\\[")
-    title = strings.ReplaceAll(title, "]", "\\]")
-    title = strings.ReplaceAll(title, "`", "\\`")
-    title = "*" + title + "*"  // 直接加粗
+    // 处理标题（加粗）
+    formattedTitle := formatBoldText(title)
     
-    url = escapeURL(url)
-    group = formatBold(escapeMarkdown(group))  // 分组加粗
+    // 处理URL（只转义必要的字符）
+    formattedURL := url
+    formattedURL = strings.ReplaceAll(formattedURL, "\\", "\\\\")
+    formattedURL = strings.ReplaceAll(formattedURL, "(", "\\(")
+    formattedURL = strings.ReplaceAll(formattedURL, ")", "\\)")
+    formattedURL = strings.ReplaceAll(formattedURL, "!", "\\!")
     
-    // 将匹配的关键词加粗并添加#
-    boldKeywords := make([]string, len(matchedKeywords))
+    // 处理关键词（加粗并添加#）
+    formattedKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        keyword = escapeMarkdown(keyword)
-        boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))
+        formattedKeywords[i] = "\\#" + formatBoldText(keyword)
     }
     
-    // 格式化时间，不转义连字符和点号
-    timeStr := pubDateChina.Format("2006-01-02 15:04:05")
-    timeStr = "*" + timeStr + "*"  // 直接加粗，不进行转义
+    // 处理分组（加粗）
+    formattedGroup := formatBoldText(group)
     
-    text := fmt.Sprintf("%s\n\n🌐 %s %s\n\n🔍 %s %s\n\n🏷️ %s %s\n\n🕒 %s %s", 
-        title,
-        formatBold("链接:"),
-        url,
-        formatBold("关键词:"),
-        strings.Join(boldKeywords, " "), 
-        formatBold("分组:"),
-        group,
-        formatBold("时间:"),
-        timeStr)
+    // 处理时间（加粗，需要转义连字符）
+    timeStr := pubDateChina.Format("2006\\-01\\-02 15:04:05")
+    formattedTime := "*" + timeStr + "*"
+    
+    // 构建消息文本（标签文本也需要加粗）
+    text := fmt.Sprintf("%s\n\n🌐 *链接:* %s\n\n🔍 *关键词:* %s\n\n🏷️ *分组:* %s\n\n🕒 *时间:* %s", 
+        formattedTitle,
+        formattedURL,
+        strings.Join(formattedKeywords, " "),
+        formattedGroup,
+        formattedTime)
     
     log.Printf("发送消息: %s", text)
 
+    // 发送消息
     for _, userID := range b.users {
         msg := tgbotapi.NewMessage(userID, text)
         msg.ParseMode = "MarkdownV2"
@@ -222,56 +255,6 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     }
 
     return nil
-}
-
-// escapeMarkdown 转义 MarkdownV2 格式中的特殊字符
-func escapeMarkdown(text string) string {
-    // 定义需要转义的特殊字符，注意顺序很重要
-    text = strings.ReplaceAll(text, "\\", "\\\\")
-    specialChars := []string{
-        "_", "[", "]", "(", ")", "~", "`", ">", 
-        "#", "+", "-", "=", "|", "{", "}", ".", "!", 
-    }
-    for _, char := range specialChars {
-        text = strings.ReplaceAll(text, char, "\\"+char)
-    }
-    return text
-}
-
-// escapeURL 仅转义URL中的特定字符，保持大部分URL字符不变
-func escapeURL(url string) string {
-    // URL中需要转义的字符
-    url = strings.ReplaceAll(url, "\\", "\\\\")  // 先转义反斜杠
-    url = strings.ReplaceAll(url, ".", "\\.")
-    url = strings.ReplaceAll(url, "(", "\\(")
-    url = strings.ReplaceAll(url, ")", "\\)")
-    url = strings.ReplaceAll(url, "!", "\\!")
-    url = strings.ReplaceAll(url, "_", "\\_")
-    url = strings.ReplaceAll(url, "-", "\\-")
-    return url
-}
-
-// formatBold 将文本加粗，同时处理特殊字符
-func formatBold(text string) string {
-    if text == "" {
-        return "*无*"
-    }
-    // 先转义特殊字符
-    text = escapeMarkdown(text)
-    // 如果文本中已经包含星号，需要特别处理
-    text = strings.ReplaceAll(text, "*", "\\*")
-    return "*" + text + "*"
-}
-
-func (b *Bot) sendMessage(chatID int64, text string) {
-    // 转义特殊字符
-    text = escapeMarkdown(text)
-    
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "MarkdownV2"
-    if _, err := b.api.Send(msg); err != nil {
-        log.Printf("发送消息失败: %v", err)
-    }
 }
 
 func (b *Bot) reloadConfig() error {
@@ -329,7 +312,7 @@ func (b *Bot) handleView(chatID int64, userID int64) {
         ),
     )
 
-    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(text))
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(text))
     msg.ParseMode = "MarkdownV2"
     msg.ReplyMarkup = keyboard
     if _, err := b.api.Send(msg); err != nil {
@@ -355,7 +338,7 @@ func (b *Bot) handleEditCommand(chatID int64, userID int64) {
         ),
     )
 
-    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(text))
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(text))
     msg.ParseMode = "MarkdownV2"
     msg.ReplyMarkup = keyboard
     if _, err := b.api.Send(msg); err != nil {
@@ -386,7 +369,7 @@ func (b *Bot) handleAdd(chatID int64, userID int64) {
     message := b.listSubscriptions()
     message += "\n请输入要添加的RSS订阅URL（如需添加多个URL，请用英文逗号分隔）："
     
-    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(message))
     msg.ParseMode = "MarkdownV2"
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
@@ -398,7 +381,7 @@ func (b *Bot) handleEdit(chatID int64, userID int64) {
     message := b.listSubscriptions()
     message += "\n请输入要编辑的RSS订阅编号："
     
-    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(message))
     msg.ParseMode = "MarkdownV2"
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
@@ -410,7 +393,7 @@ func (b *Bot) handleDelete(chatID int64, userID int64) {
     message := b.listSubscriptions()
     message += "\n请输入要删除的RSS订阅编号："
     
-    msg := tgbotapi.NewMessage(chatID, escapeMarkdown(message))
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(message))
     msg.ParseMode = "MarkdownV2"
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
@@ -687,8 +670,8 @@ func (b *Bot) getConfig() string {
         keywords := strings.Join(rss.Keywords, ", ")
         config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            formatBold(keywords),
-            formatBold(rss.Group))
+            formatBoldText(keywords),
+            formatBoldText(rss.Group))
     }
     return config
 }
@@ -703,8 +686,8 @@ func (b *Bot) listSubscriptions() string {
         keywords := strings.Join(rss.Keywords, ", ")
         list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            formatBold(keywords),
-            formatBold(rss.Group))
+            formatBoldText(keywords),
+            formatBoldText(rss.Group))
     }
     return list
 }
@@ -712,9 +695,9 @@ func (b *Bot) listSubscriptions() string {
 func (b *Bot) getStats() string {
     dailyCount, weeklyCount, totalCount := b.stats.GetMessageCounts()
     return fmt.Sprintf("推送统计:\n📊 今日推送: %s\n📈 本周推送: %s\n📋 总计推送: %s", 
-        formatBold(strconv.Itoa(dailyCount)),
-        formatBold(strconv.Itoa(weeklyCount)),
-        formatBold(strconv.Itoa(totalCount)))
+        formatBoldText(strconv.Itoa(dailyCount)),
+        formatBoldText(strconv.Itoa(weeklyCount)),
+        formatBoldText(strconv.Itoa(totalCount)))
 }
 
 func (b *Bot) UpdateConfig(cfg *config.Config) {
