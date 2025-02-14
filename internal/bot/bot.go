@@ -674,10 +674,15 @@ func (b *Bot) getConfig() string {
             config += fmt.Sprintf("   %d) %s\n", j+1, url)  // 直接显示URL，不进行转义
         }
         keywords := strings.Join(rss.Keywords, ", ")
-        config += fmt.Sprintf("   ⏱️ 间隔: *%d*秒\n   🔑 关键词: *%s*\n   🏷️ 组名: *%s*\n", 
+        
+        // 先转义特殊字符，再添加加粗标记
+        escapedKeywords := escapeMarkdownV2Text(keywords)
+        escapedGroup := escapeMarkdownV2Text(rss.Group)
+        
+        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            escapeMarkdownV2Text(keywords),
-            escapeMarkdownV2Text(rss.Group))
+            escapedKeywords,
+            escapedGroup)
     }
     return config
 }
@@ -692,11 +697,14 @@ func (b *Bot) listSubscriptions() string {
         // 处理关键词列表
         keywords := strings.Join(rss.Keywords, ", ")
         
-        // 直接使用 Markdown 格式，数字和文本内容加粗
-        list += fmt.Sprintf("   ⏱️ 间隔: *%d*秒\n   🔑 关键词: *%s*\n   🏷️ 组名: *%s*\n", 
+        // 先转义特殊字符，再添加加粗标记
+        escapedKeywords := escapeMarkdownV2Text(keywords)
+        escapedGroup := escapeMarkdownV2Text(rss.Group)
+        
+        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
-            escapeMarkdownV2Text(keywords),
-            escapeMarkdownV2Text(rss.Group))
+            escapedKeywords,
+            escapedGroup)
     }
     return list
 }
