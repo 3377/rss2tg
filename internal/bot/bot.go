@@ -165,7 +165,13 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     pubDateChina := pubDate.In(chinaLoc)
     
     // 转义特殊字符并格式化文本
-    title = formatBold(escapeMarkdown(title))  // 标题加粗
+    // 标题只需要转义 * 和 [ ] 这些真正需要转义的字符
+    title = strings.ReplaceAll(title, "*", "\\*")
+    title = strings.ReplaceAll(title, "[", "\\[")
+    title = strings.ReplaceAll(title, "]", "\\]")
+    title = strings.ReplaceAll(title, "`", "\\`")
+    title = "*" + title + "*"  // 直接加粗
+    
     url = escapeURL(url)
     group = formatBold(escapeMarkdown(group))  // 分组加粗
     
@@ -176,8 +182,9 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
         boldKeywords[i] = fmt.Sprintf("\\#%s", formatBold(keyword))
     }
     
-    // 格式化时间
-    timeStr := formatBold(escapeMarkdown(pubDateChina.Format("2006-01-02 15:04:05")))  // 时间加粗
+    // 格式化时间，不转义连字符和点号
+    timeStr := pubDateChina.Format("2006-01-02 15:04:05")
+    timeStr = "*" + timeStr + "*"  // 直接加粗，不进行转义
     
     text := fmt.Sprintf("%s\n\n🌐 %s %s\n\n🔍 %s %s\n\n🏷️ %s %s\n\n🕒 %s %s", 
         title,
@@ -669,17 +676,14 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
 
 func (b *Bot) getConfig() string {
     config := "当前配置信息：\n"
-    // 用户和频道不需要加粗，直接显示
     config += fmt.Sprintf("用户: %v\n", b.users)
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        // 序号和URLs不需要转义，直接显示
         config += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
-            config += fmt.Sprintf("   %d) %s\n", j+1, escapeURL(url))
+            config += fmt.Sprintf("   %d) %s\n", j+1, url)  // 直接显示URL，不进行转义
         }
-        // 关键词和组名需要加粗显示
         keywords := strings.Join(rss.Keywords, ", ")
         config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
@@ -692,12 +696,10 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        // 序号和URLs不需要转义，直接显示
         list += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
         for j, url := range rss.URLs {
-            list += fmt.Sprintf("   %d) %s\n", j+1, escapeURL(url))
+            list += fmt.Sprintf("   %d) %s\n", j+1, url)  // 直接显示URL，不进行转义
         }
-        // 关键词和组名需要加粗显示
         keywords := strings.Join(rss.Keywords, ", ")
         list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
             rss.Interval, 
