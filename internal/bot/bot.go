@@ -201,12 +201,15 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 处理标题（加粗）
     formattedTitle := formatBoldText(title)
     
-    // 处理URL（只转义必要的字符）
+    // 处理URL（转义所有特殊字符）
     formattedURL := url
     formattedURL = strings.ReplaceAll(formattedURL, "\\", "\\\\")
+    formattedURL = strings.ReplaceAll(formattedURL, ".", "\\.")
     formattedURL = strings.ReplaceAll(formattedURL, "(", "\\(")
     formattedURL = strings.ReplaceAll(formattedURL, ")", "\\)")
     formattedURL = strings.ReplaceAll(formattedURL, "!", "\\!")
+    formattedURL = strings.ReplaceAll(formattedURL, "-", "\\-")
+    formattedURL = strings.ReplaceAll(formattedURL, "_", "\\_")
     
     // 处理关键词（加粗并添加#）
     formattedKeywords := make([]string, len(matchedKeywords))
@@ -217,8 +220,11 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 处理分组（加粗）
     formattedGroup := formatBoldText(group)
     
-    // 处理时间（加粗，需要转义连字符）
-    timeStr := pubDateChina.Format("2006\\-01\\-02 15:04:05")
+    // 处理时间（加粗，需要转义所有特殊字符）
+    timeStr := pubDateChina.Format("2006-01-02 15:04:05")
+    timeStr = strings.ReplaceAll(timeStr, "-", "\\-")
+    timeStr = strings.ReplaceAll(timeStr, ":", "\\:")
+    timeStr = strings.ReplaceAll(timeStr, ".", "\\.")
     formattedTime := "*" + timeStr + "*"
     
     // 构建消息文本（标签文本也需要加粗）
