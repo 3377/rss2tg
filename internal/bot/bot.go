@@ -762,3 +762,15 @@ func (b *Bot) handleDelAll(chatID int64, userID int64) {
     b.userState[userID] = "del_all_keywords"
     b.sendMessage(chatID, "请输入要从所有订阅中删除的关键词（用空格分隔）：")
 }
+
+// sendMessage 发送普通消息
+func (b *Bot) sendMessage(chatID int64, text string) {
+    // 转义特殊字符
+    text = escapeMarkdownV2Text(text)
+    
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
+}
