@@ -107,14 +107,88 @@ func stringSliceEqual(a, b []string) bool {
 func Load(path string) (*Config, error) {
     log.Printf("正在加载配置文件: %s", path)
     
+    var config Config
+    
+    // 尝试读取配置文件
     data, err := ioutil.ReadFile(path)
     if err != nil {
-        return nil, fmt.Errorf("读取配置文件失败: %v", err)
+        if !os.IsNotExist(err) {
+            return nil, fmt.Errorf("读取配置文件失败: %v", err)
+        }
+        // 如果文件不存在，创建一个空的配置
+        config = Config{}
+    } else {
+        // 解析已存在的配置文件
+        if err := yaml.Unmarshal(data, &config); err != nil {
+            return nil, fmt.Errorf("解析配置文件失败: %v", err)
+        }
     }
 
-    var config Config
-    if err := yaml.Unmarshal(data, &config); err != nil {
-        return nil, fmt.Errorf("解析配置文件失败: %v", err)
+    // 从环境变量补充缺失的配置
+    configChanged := false
+
+    // 检查并补充 Telegram 配置
+    if config.Telegram.BotToken == "" {
+        if token := os.Getenv("TELEGRAM_BOT_TOKEN"); token != "" {
+            config.Telegram.BotToken = token
+            configChanged = true
+        }
+    }
+
+    if len(config.Telegram.Users) == 0 {
+        if users := os.Getenv("TELEGRAM_USERS"); users != "" {
+            config.Telegram.Users = strings.Split(users, ",")
+            configChanged = true
+        }
+    }
+
+    if len(config.Telegram.Channels) == 0 {
+        if channels := os.Getenv("TELEGRAM_CHANNELS"); channels != "" {
+            config.Telegram.Channels = strings.Split(channels, ",")
+            configChanged = true
+        }
+    }
+
+    // 检查并补充 RSS 配置
+    if len(config.RSS) == 0 {
+        if rssURLs := os.Getenv("RSS_URLS"); rssURLs != "" {
+            urlGroups := strings.Split(rssURLs, ";") // 使用分号分隔不同的RSS组
+            for i, urlGroup := range urlGroups {
+                entry := RSSEntry{
+                    URLs:     strings.Split(strings.TrimSpace(urlGroup), ","),
+                    Interval: 300, // 默认5分钟
+                    Group:    "默认分组",
+                }
+                
+                // 尝试加载对应的关键词
+                if keywords := os.Getenv(fmt.Sprintf("RSS_KEYWORDS_%d", i)); keywords != "" {
+                    entry.Keywords = strings.Split(keywords, ",")
+                }
+                
+                // 尝试加载对应的间隔时间
+                if interval := os.Getenv(fmt.Sprintf("RSS_INTERVAL_%d", i)); interval != "" {
+                    if i, err := strconv.Atoi(interval); err == nil && i > 0 {
+                        entry.Interval = i
+                    }
+                }
+                
+                // 尝试加载对应的分组
+                if group := os.Getenv(fmt.Sprintf("RSS_GROUP_%d", i)); group != "" {
+                    entry.Group = group
+                }
+
+                config.RSS = append(config.RSS, entry)
+            }
+            configChanged = true
+        }
+    }
+
+    // 如果配置有变化，保存到文件
+    if configChanged {
+        log.Println("从环境变量补充了配置信息，正在保存到配置文件")
+        if err := config.Save(path); err != nil {
+            log.Printf("警告：保存补充的配置到文件失败: %v", err)
+        }
     }
 
     // 验证和清理配置
