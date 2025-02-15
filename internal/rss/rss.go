@@ -189,6 +189,16 @@ func isWordMatch(text, keyword string) bool {
     return false
 }
 
+// contains 检查字符串切片是否包含特定字符串
+func contains(slice []string, str string) bool {
+    for _, v := range slice {
+        if v == str {
+            return true
+        }
+    }
+    return false
+}
+
 func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
     if m.db.WasSent(item.Link) {
         return nil
@@ -207,6 +217,7 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
     
     log.Printf("标准化后的标题: %s", normalizedTitle)
     log.Printf("标准化后的描述: %s", normalizedDesc)
+    log.Printf("部分匹配状态: %v", feed.AllowPartMatch)
     
     var matched []string
     for _, keyword := range feed.Keywords {
@@ -214,44 +225,48 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
         normalizedKeyword := normalizeText(keyword)
         log.Printf("检查关键词: %s (标准化后: %s)", keyword, normalizedKeyword)
         
-        // 检查完整词匹配
+        // 首先尝试完整词匹配
         if isWordMatch(normalizedTitle, normalizedKeyword) {
-            log.Printf("在标题中找到关键词完整匹配: %s", keyword)
-            matched = append(matched, keyword)
-        } else if isWordMatch(normalizedDesc, normalizedKeyword) {
-            log.Printf("在描述中找到关键词完整匹配: %s", keyword)
-            matched = append(matched, keyword)
-        } else if feed.AllowPartMatch {  // 只在允许部分匹配时进行部分匹配
-            // 尝试部分匹配
+            log.Printf("在标题中找到完整词匹配: %s", keyword)
+            if !contains(matched, keyword) {
+                matched = append(matched, keyword)
+            }
+            continue
+        }
+        
+        if isWordMatch(normalizedDesc, normalizedKeyword) {
+            log.Printf("在描述中找到完整词匹配: %s", keyword)
+            if !contains(matched, keyword) {
+                matched = append(matched, keyword)
+            }
+            continue
+        }
+        
+        // 如果允许部分匹配且没有找到完整匹配，尝试部分匹配
+        if feed.AllowPartMatch {
             if strings.Contains(normalizedTitle, normalizedKeyword) {
-                log.Printf("在标题中找到关键词部分匹配: %s", keyword)
-                matched = append(matched, keyword)
+                log.Printf("在标题中找到部分匹配: %s", keyword)
+                if !contains(matched, keyword) {
+                    matched = append(matched, keyword)
+                }
             } else if strings.Contains(normalizedDesc, normalizedKeyword) {
-                log.Printf("在描述中找到关键词部分匹配: %s", keyword)
-                matched = append(matched, keyword)
+                log.Printf("在描述中找到部分匹配: %s", keyword)
+                if !contains(matched, keyword) {
+                    matched = append(matched, keyword)
+                }
             } else {
-                log.Printf("未找到关键词: %s", keyword)
+                log.Printf("未找到关键词 %s 的匹配", keyword)
             }
         } else {
-            log.Printf("未找到关键词完整匹配: %s（部分匹配已禁用）", keyword)
+            log.Printf("未找到关键词 %s 的完整词匹配（部分匹配已禁用）", keyword)
         }
     }
 
     if len(matched) > 0 {
-        log.Printf("匹配到的关键词: %v", matched)
+        log.Printf("最终匹配到的关键词: %v", matched)
     } else {
         log.Printf("没有匹配到任何关键词")
     }
 
     return matched
-}
-
-// 辅助函数：检查字符串切片是否包含特定字符串
-func contains(slice []string, str string) bool {
-    for _, v := range slice {
-        if v == str {
-            return false
-        }
-    }
-    return false
 }
