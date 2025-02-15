@@ -217,7 +217,7 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
     
     log.Printf("标准化后的标题: %s", normalizedTitle)
     log.Printf("标准化后的描述: %s", normalizedDesc)
-    log.Printf("部分匹配状态: %v", feed.AllowPartMatch)
+    log.Printf("部分匹配设置: %s", map[bool]string{true: "允许", false: "禁用"}[feed.AllowPartMatch])
     
     var matched []string
     for _, keyword := range feed.Keywords {
@@ -258,7 +258,7 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
                 log.Printf("未找到关键词 %s 的匹配", keyword)
             }
         } else {
-            log.Printf("未找到关键词 %s 的完整词匹配（部分匹配已禁用）", keyword)
+            log.Printf("未找到关键词 %s 的完整词匹配（当前设置: 仅允许完整匹配）", keyword)
         }
     }
 

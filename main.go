@@ -28,10 +28,11 @@ func NewApp(cfg *config.Config, db *storage.Storage, stats *stats.Stats) (*App, 
     rssConfigs := make([]rss.Config, len(cfg.RSS))
     for i, rssCfg := range cfg.RSS {
         rssConfigs[i] = rss.Config{
-            URLs:     rssCfg.URLs,
-            Interval: rssCfg.Interval,
-            Keywords: rssCfg.Keywords,
-            Group:    rssCfg.Group,
+            URLs:           rssCfg.URLs,
+            Interval:       rssCfg.Interval,
+            Keywords:       rssCfg.Keywords,
+            Group:          rssCfg.Group,
+            AllowPartMatch: rssCfg.AllowPartMatch,
         }
     }
 
@@ -59,10 +60,11 @@ func (app *App) updateRSS() {
     rssConfigs := make([]rss.Config, len(app.config.RSS))
     for i, rssCfg := range app.config.RSS {
         rssConfigs[i] = rss.Config{
-            URLs:     rssCfg.URLs,
-            Interval: rssCfg.Interval,
-            Keywords: rssCfg.Keywords,
-            Group:    rssCfg.Group,
+            URLs:           rssCfg.URLs,
+            Interval:       rssCfg.Interval,
+            Keywords:       rssCfg.Keywords,
+            Group:          rssCfg.Group,
+            AllowPartMatch: rssCfg.AllowPartMatch,
         }
     }
     app.rssManager.UpdateFeeds(rssConfigs)
