@@ -476,9 +476,10 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 cleanURLs = append(cleanURLs, url)
             }
         }
-        // 创建新的RSSEntry并添加到配置中
+        // 创建新的RSSEntry并添加到配置中，默认允许部分匹配
         b.config.RSS = append(b.config.RSS, config.RSSEntry{
-            URLs: cleanURLs,
+            URLs:           cleanURLs,
+            AllowPartMatch: true,  // 默认允许部分匹配
         })
         b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
@@ -513,6 +514,24 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         lastIndex := len(b.config.RSS) - 1
         if lastIndex >= 0 {
             b.config.RSS[lastIndex].Group = text
+            b.userState[userID] = "add_part_match"
+            b.sendMessage(chatID, "是否允许部分关键词匹配？\n1: 允许（如：关键词\"go\"可以匹配到\"golang\"）\n2: 不允许（仅匹配完整单词）\n请输入选项编号(1或2)：")
+        } else {
+            b.sendMessage(chatID, "添加订阅失败：找不到要编辑的订阅")
+            delete(b.userState, userID)
+        }
+    case "add_part_match":
+        lastIndex := len(b.config.RSS) - 1
+        if lastIndex >= 0 {
+            switch text {
+            case "1":
+                b.config.RSS[lastIndex].AllowPartMatch = true
+            case "2":
+                b.config.RSS[lastIndex].AllowPartMatch = false
+            default:
+                b.sendMessage(chatID, "无效的选项，请输入1或2：")
+                return
+            }
             delete(b.userState, userID)
             if err := b.config.Save(b.configFile); err != nil {
                 b.sendMessage(chatID, "添加订阅成功，但保存配置失败。")
@@ -652,6 +671,22 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             if text != "1" {
                 b.config.RSS[index].Group = text
             }
+            b.userState[userID] = fmt.Sprintf("edit_part_match_%d", index)
+            b.sendMessage(chatID, fmt.Sprintf("当前部分匹配设置：%v\n是否允许部分关键词匹配？\n1: 允许（如：关键词\"go\"可以匹配到\"golang\"）\n2: 不允许（仅匹配完整单词）\n3: 保持不变\n请输入选项编号(1-3)：", 
+                b.config.RSS[index].AllowPartMatch))
+        } else if strings.HasPrefix(b.userState[userID], "edit_part_match_") {
+            index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_part_match_"))
+            switch text {
+            case "1":
+                b.config.RSS[index].AllowPartMatch = true
+            case "2":
+                b.config.RSS[index].AllowPartMatch = false
+            case "3":
+                // 保持不变
+            default:
+                b.sendMessage(chatID, "无效的选项，请输入1-3：")
+                return
+            }
             delete(b.userState, userID)
             if err := b.config.Save(b.configFile); err != nil {
                 b.sendMessage(chatID, "编辑订阅成功，但保存配置失败。")
@@ -679,10 +714,11 @@ func (b *Bot) getConfig() string {
         escapedKeywords := escapeMarkdownV2Text(keywords)
         escapedGroup := escapeMarkdownV2Text(rss.Group)
         
-        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
+        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n", 
             rss.Interval, 
             escapedKeywords,
-            escapedGroup)
+            escapedGroup,
+            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)))
     }
     return config
 }
@@ -701,10 +737,11 @@ func (b *Bot) listSubscriptions() string {
         escapedKeywords := escapeMarkdownV2Text(keywords)
         escapedGroup := escapeMarkdownV2Text(rss.Group)
         
-        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n", 
+        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n", 
             rss.Interval, 
             escapedKeywords,
-            escapedGroup)
+            escapedGroup,
+            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)))
     }
     return list
 }
@@ -790,4 +827,12 @@ func (b *Bot) sendMessage(chatID int64, text string) {
     if _, err := b.api.Send(msg); err != nil {
         log.Printf("发送消息失败: %v", err)
     }
+}
+
+// 辅助函数：获取部分匹配状态的描述
+func (b *Bot) getPartMatchStatus(allowPartMatch bool) string {
+    if allowPartMatch {
+        return "允许"
+    }
+    return "禁用"
 }

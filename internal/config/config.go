@@ -24,11 +24,12 @@ type Config struct {
 
 // RSSEntry 定义RSS配置项
 type RSSEntry struct {
-    URLs     []string `yaml:"urls,omitempty"`     // 新版本：支持多个URL
-    URL      string   `yaml:"url,omitempty"`      // 旧版本：单个URL
-    Interval int      `yaml:"interval"` // 更新间隔（秒）
-    Keywords []string `yaml:"keywords"` // 关键词列表
-    Group    string   `yaml:"group"`    // 分组名称
+    URLs           []string `yaml:"urls,omitempty"`     // 新版本：支持多个URL
+    URL            string   `yaml:"url,omitempty"`      // 旧版本：单个URL
+    Interval       int      `yaml:"interval"`           // 更新间隔（秒）
+    Keywords       []string `yaml:"keywords"`           // 关键词列表
+    Group          string   `yaml:"group"`              // 分组名称
+    AllowPartMatch bool     `yaml:"allow_part_match"`   // 是否允许部分匹配
 }
 
 // UnmarshalYAML 实现自定义的YAML解析逻辑，支持新旧两种格式
@@ -47,6 +48,9 @@ func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
         r.URL = "" // 清空旧字段
     }
 
+    // 设置默认值：允许部分匹配
+    r.AllowPartMatch = true
+
     return nil
 }
 
@@ -54,15 +58,17 @@ func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
 func (r RSSEntry) MarshalYAML() (interface{}, error) {
     // 始终使用新格式序列化
     return struct {
-        URLs     []string `yaml:"urls"`
-        Interval int      `yaml:"interval"`
-        Keywords []string `yaml:"keywords"`
-        Group    string   `yaml:"group"`
+        URLs           []string `yaml:"urls"`
+        Interval       int      `yaml:"interval"`
+        Keywords       []string `yaml:"keywords"`
+        Group          string   `yaml:"group"`
+        AllowPartMatch bool     `yaml:"allow_part_match"`
     }{
-        URLs:     r.URLs,
-        Interval: r.Interval,
-        Keywords: r.Keywords,
-        Group:    r.Group,
+        URLs:           r.URLs,
+        Interval:       r.Interval,
+        Keywords:       r.Keywords,
+        Group:          r.Group,
+        AllowPartMatch: r.AllowPartMatch,
     }, nil
 }
 
