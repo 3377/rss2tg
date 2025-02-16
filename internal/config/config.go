@@ -35,10 +35,27 @@ type RSSEntry struct {
 // UnmarshalYAML 实现自定义的YAML解析逻辑，支持新旧两种格式
 func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
     // 定义一个临时结构体来解析YAML
-    type tempRSSEntry RSSEntry
-    if err := unmarshal((*tempRSSEntry)(r)); err != nil {
+    type tempRSSEntry struct {
+        URLs           []string `yaml:"urls,omitempty"`
+        URL            string   `yaml:"url,omitempty"`
+        Interval       int      `yaml:"interval"`
+        Keywords       []string `yaml:"keywords"`
+        Group          string   `yaml:"group"`
+        AllowPartMatch *bool    `yaml:"allow_part_match,omitempty"`  // 使用指针类型
+    }
+
+    // 解析配置到临时结构体
+    var temp tempRSSEntry
+    if err := unmarshal(&temp); err != nil {
         return err
     }
+
+    // 复制字段到实际结构体
+    r.URLs = temp.URLs
+    r.URL = temp.URL
+    r.Interval = temp.Interval
+    r.Keywords = temp.Keywords
+    r.Group = temp.Group
 
     // 如果存在旧版本的单个URL，将其转换为URLs数组
     if r.URL != "" {
@@ -48,8 +65,12 @@ func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
         r.URL = "" // 清空旧字段
     }
 
-    // 设置默认值：允许部分匹配
-    r.AllowPartMatch = true
+    // 只在未设置值时使用默认值
+    if temp.AllowPartMatch == nil {
+        r.AllowPartMatch = true  // 默认值
+    } else {
+        r.AllowPartMatch = *temp.AllowPartMatch
+    }
 
     return nil
 }
