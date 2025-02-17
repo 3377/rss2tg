@@ -425,7 +425,14 @@ func (b *Bot) handleList(chatID int64) {
 }
 
 func (b *Bot) handleStats(chatID int64) {
-    b.sendMessage(chatID, b.getStats())
+    // 创建新的消息
+    msg := tgbotapi.NewMessage(chatID, b.getStats())
+    msg.ParseMode = "MarkdownV2"  // 设置解析模式为 MarkdownV2
+    
+    // 发送消息
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送统计信息失败: %v", err)
+    }
 }
 
 func (b *Bot) handleUserInput(message *tgbotapi.Message) {
