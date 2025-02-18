@@ -1010,3 +1010,13 @@ func (b *Bot) isAdmin(userID int64) bool {
     }
     return false
 }
+
+// 添加 contains 辅助函数
+func contains(slice []int64, item int64) bool {
+    for _, v := range slice {
+        if v == item {
+            return true
+        }
+    }
+    return false
+}
