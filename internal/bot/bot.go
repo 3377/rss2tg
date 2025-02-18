@@ -73,6 +73,7 @@ func (b *Bot) Start() {
     commands := []tgbotapi.BotCommand{
         {Command: "start", Description: "开始/帮助"},
         {Command: "view", Description: "查看类命令"},
+        {Command: "users", Description: "用户管理命令"},
         {Command: "edit", Description: "编辑类命令"},
         {Command: "stats", Description: "推送统计"},
     }

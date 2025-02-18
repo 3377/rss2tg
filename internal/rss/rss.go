@@ -209,40 +209,19 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
         return []string{"无关键词"}
     }
 
-    // 聚合日志输出 - 文章基本信息
-    log.Printf("📝 正在处理文章:\n"+
-        "   标题: %s\n"+
-        "   描述: %s\n"+
-        "   链接: %s\n"+
-        "   部分匹配: %s",
-        item.Title,
-        item.Description,
-        item.Link,
-        map[bool]string{true: "允许", false: "禁用"}[feed.AllowPartMatch])
-    
     // 标准化文本
     normalizedTitle := normalizeText(item.Title)
     normalizedDesc := normalizeText(item.Description)
     
-    // 聚合日志输出 - 标准化后的文本
-    log.Printf("🔍 标准化后的文本:\n"+
-        "   标题: %s\n"+
-        "   描述: %s",
-        normalizedTitle,
-        normalizedDesc)
-    
     var matched []string
-    var matchLog strings.Builder
-    matchLog.WriteString("📌 关键词匹配结果:\n")
     
+    // 检查每个关键词
     for _, keyword := range feed.Keywords {
         // 标准化关键词
         normalizedKeyword := normalizeText(keyword)
-        matchLog.WriteString(fmt.Sprintf("   检查关键词 [%s]:\n", keyword))
         
         // 首先尝试完整词匹配
         if isWordMatch(normalizedTitle, normalizedKeyword) {
-            matchLog.WriteString(fmt.Sprintf("      ✅ 在标题中找到完整词匹配\n"))
             if !contains(matched, keyword) {
                 matched = append(matched, keyword)
             }
@@ -250,7 +229,6 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
         }
         
         if isWordMatch(normalizedDesc, normalizedKeyword) {
-            matchLog.WriteString(fmt.Sprintf("      ✅ 在描述中找到完整词匹配\n"))
             if !contains(matched, keyword) {
                 matched = append(matched, keyword)
             }
@@ -260,31 +238,34 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
         // 如果允许部分匹配且没有找到完整匹配，尝试部分匹配
         if feed.AllowPartMatch {
             if strings.Contains(normalizedTitle, normalizedKeyword) {
-                matchLog.WriteString(fmt.Sprintf("      ✅ 在标题中找到部分匹配\n"))
                 if !contains(matched, keyword) {
                     matched = append(matched, keyword)
                 }
             } else if strings.Contains(normalizedDesc, normalizedKeyword) {
-                matchLog.WriteString(fmt.Sprintf("      ✅ 在描述中找到部分匹配\n"))
                 if !contains(matched, keyword) {
                     matched = append(matched, keyword)
                 }
-            } else {
-                matchLog.WriteString(fmt.Sprintf("      ❌ 未找到匹配\n"))
             }
-        } else {
-            matchLog.WriteString(fmt.Sprintf("      ❌ 未找到完整词匹配（仅允许完整匹配）\n"))
         }
     }
 
-    // 输出匹配日志
-    log.Print(matchLog.String())
-
-    // 输出最终结果
+    // 根据是否匹配到关键词来决定日志输出级别
     if len(matched) > 0 {
-        log.Printf("✨ 匹配结果: 找到 %d 个关键词 %v", len(matched), matched)
+        // 如果匹配到关键词，输出详细日志
+        log.Printf("📝 发现匹配文章:\n"+
+            "   标题: %s\n"+
+            "   描述: %s\n"+
+            "   链接: %s\n"+
+            "   部分匹配: %s\n"+
+            "✨ 匹配关键词: %v",
+            item.Title,
+            item.Description,
+            item.Link,
+            map[bool]string{true: "允许", false: "禁用"}[feed.AllowPartMatch],
+            matched)
     } else {
-        log.Printf("❌ 匹配结果: 未找到任何关键词")
+        // 如果未匹配到关键词，只输出简单的监听状态
+        log.Printf("👀 监听RSS: %s, 标题: %s", feed.URLs[0], item.Title)
     }
 
     return matched
