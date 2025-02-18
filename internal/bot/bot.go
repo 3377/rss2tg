@@ -858,11 +858,13 @@ func (b *Bot) handleVersion(chatID int64) {
     message := fmt.Sprintf("🤖 *RSS2TG 机器人*\n\n"+
         "当前版本：%s\n"+
         "最新版本：%s\n\n"+
-        "©️ 版权所有 2024 RSS2TG\n"+
-        "🌐 官方网站：[GitHub](%s)",
+        "©️ 版权所有 2025 drfyup\n"+
+        "🌐 官方网站：[GitHub](%s)\n"+
+        "📖 官方文档：`%s` \\(点击复制\\)",
         escapeMarkdownV2Text(currentVersion),
         escapeMarkdownV2Text(latestVersion),
-        "https://github\\.com/3377/rss2tg")  // 转义点号
+        "https://github\\.com/3377/rss2tg",
+        "https://3377\\.github\\.io/rss2tg")  // 转义点号
 
     msg := tgbotapi.NewMessage(chatID, message)
     msg.ParseMode = "MarkdownV2"

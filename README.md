@@ -2,15 +2,7 @@
 
 ## [English](#english-version) | [简体中文](#rss-to-telegram-bot-使用文档)
 
-#
-
-> [!TIP]
-> **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_**
-> **_支持 AMD64/ARM64_**
-> **_镜像大小 17M，内存占用 10M_**
-> **——By [drfyup](https://hstz.com)**
-
-#
+> [!TIP] > **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_** > **_支持 AMD64/ARM64_** > **_镜像大小 17M，内存占用 10M_** > **——By [drfyup](https://hstz.com)**
 
 ## 1. 部署方法
 
@@ -341,11 +333,7 @@ docker logs rss2tg
 
 #
 
-> [!TIP]
-> **_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._**
-> **_ Support AMD64/ARM64_**
-> **_ Image size 17M, memory footprint 10M_**
-> **——By [drfyup](https://hstz.com)**
+> [!TIP] > **_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._** > **_ Support AMD64/ARM64_** > **_ Image size 17M, memory footprint 10M_** > **——By [drfyup](https://hstz.com)**
 
 #
 
