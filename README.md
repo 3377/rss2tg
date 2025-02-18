@@ -128,17 +128,17 @@ rss:
 
 #### 2.2.2 环境变量说明
 
-| 环境变量             | 必填 | 说明                                                   | 示例                                                                                      |
-| -------------------- | ---- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| TELEGRAM_BOT_TOKEN   | 是   | Telegram Bot 的 API Token                              | 110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw                                              |
-| TELEGRAM_USERS       | 是   | 接收消息的用户 ID，多个用逗号分隔                      | 123456789,987654321                                                                       |
-| TELEGRAM_CHANNELS    | 否   | 接收消息的频道，多个用逗号分隔                         | @channel1,@channel2                                                                       |
-| TELEGRAM_ADMIN_USERS | 否   | 管理员用户 ID，多个用逗号分隔                          | 123456789,987654321                                                                       |
-| RSS_URLS             | 否   | RSS 订阅地址，多个组用分号分隔，组内多个地址用逗号分隔 | https://example1.com/feed.xml,https://example2.com/feed.xml;https://example3.com/feed.xml |
-| RSS_KEYWORDS_0       | 否   | 第一组 RSS 的关键词，多个用逗号分隔                    | vps,优惠,免费                                                                             |
-| RSS_INTERVAL_0       | 否   | 第一组 RSS 的更新间隔（秒）                            | 300                                                                                       |
-| RSS_GROUP_0          | 否   | 第一组 RSS 的分组名称                                  | 科技新闻                                                                                  |
-| TZ                   | 否   | 时区设置                                               | Asia/Shanghai                                                                             |
+| 环境变量             | 必填 | 说明                                                                                                        | 示例                                                                                              |
+| :------------------- | :--- | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+| TELEGRAM_BOT_TOKEN   | 是   | Telegram Bot 的 API Token                                                                                   | 110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw                                                      |
+| TELEGRAM_USERS       | 是   | 接收消息的用户 ID，多个用逗号分隔                                                                           | 123456789,987654321                                                                               |
+| TELEGRAM_CHANNELS    | 否   | 接收消息的频道，多个用逗号分隔                                                                              | @channel1,@channel2                                                                               |
+| TELEGRAM_ADMIN_USERS | 否   | 管理员用户 ID，多个用逗号分隔                                                                               | 123456789,987654321                                                                               |
+| RSS_URLS             | 否   | RSS 订阅地址，多个组用分号分隔，组内多个地址用逗号分隔。<br>每组可以包含多个 RSS 源，组与组之间用分号隔开。 | https://example1.com/feed.xml,<br>https://example2.com/feed.xml;<br>https://example3.com/feed.xml |
+| RSS_KEYWORDS_0       | 否   | 第一组 RSS 的关键词，多个用逗号分隔。<br>数字代表组的索引，从 0 开始。                                      | vps,优惠,免费                                                                                     |
+| RSS_INTERVAL_0       | 否   | 第一组 RSS 的更新间隔（秒）。<br>数字代表组的索引，从 0 开始。                                              | 300                                                                                               |
+| RSS_GROUP_0          | 否   | 第一组 RSS 的分组名称。<br>数字代表组的索引，从 0 开始。                                                    | 科技新闻                                                                                          |
+| TZ                   | 否   | 时区设置，用于确保日志和统计数据使用正确的时区                                                              | Asia/Shanghai                                                                                     |
 
 #### 2.2.3 配置注意事项
 
