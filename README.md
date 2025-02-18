@@ -2,7 +2,8 @@
 
 ## [English](#english-version) | [简体中文](#rss-to-telegram-bot-使用文档)
 
-[!TIP]
+## 🏷 简介
+
 **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_**
 
 **_支持 AMD64/ARM64_**
