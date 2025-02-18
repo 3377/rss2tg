@@ -94,22 +94,155 @@ telegram:
   channels:
     - "@channel_1"
     - "@channel_2"
-#这里的tg配置优先级低于环境变量，如果填在这里，一分钟后才会读取此配置
+  adminuser: # 管理员用户配置（可选）
+    - "admin_id_1"
+    - "admin_id_2"
+
 rss:
-  - url: "https://example.com/feed1.xml"
+  - urls:
+      - "https://example.com/feed1.xml"
+      - "https://example.com/feed2.xml"
     interval: 300
     keywords:
       - "keyword1"
       - "keyword2"
     group: "Group1"
-  - url: "https://example.com/feed2.xml"
-    interval: 600
-    keywords:
-      - "keyword3"
-    group: "Group2"
+    allow_part_match: true # 是否允许部分关键词匹配
 ```
 
-### 2.2 Bot 使用方法及命令
+### 2.2 配置项说明
+
+#### 2.2.1 配置文件字段说明
+
+| 配置项                 | 类型       | 必填 | 说明                      | 示例                                           |
+| ---------------------- | ---------- | ---- | ------------------------- | ---------------------------------------------- |
+| telegram.bot_token     | 字符串     | 是   | Telegram Bot 的 API Token | "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw" |
+| telegram.users         | 字符串数组 | 是   | 接收消息的用户 ID 列表    | ["123456789", "987654321"]                     |
+| telegram.channels      | 字符串数组 | 否   | 接收消息的频道列表        | ["@channel1", "@channel2"]                     |
+| telegram.adminuser     | 字符串数组 | 否   | 管理员用户 ID 列表        | ["123456789"]                                  |
+| rss[].urls             | 字符串数组 | 是   | RSS 订阅地址列表          | ["https://example.com/feed1.xml"]              |
+| rss[].interval         | 整数       | 是   | 更新间隔（秒）            | 300                                            |
+| rss[].keywords         | 字符串数组 | 否   | 关键词列表                | ["vps", "优惠"]                                |
+| rss[].group            | 字符串     | 否   | 分组名称                  | "科技新闻"                                     |
+| rss[].allow_part_match | 布尔值     | 否   | 是否允许部分匹配          | true                                           |
+
+#### 2.2.2 环境变量说明
+
+| 环境变量             | 必填 | 说明                                                   | 示例                                                                                      |
+| -------------------- | ---- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| TELEGRAM_BOT_TOKEN   | 是   | Telegram Bot 的 API Token                              | 110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw                                              |
+| TELEGRAM_USERS       | 是   | 接收消息的用户 ID，多个用逗号分隔                      | 123456789,987654321                                                                       |
+| TELEGRAM_CHANNELS    | 否   | 接收消息的频道，多个用逗号分隔                         | @channel1,@channel2                                                                       |
+| TELEGRAM_ADMIN_USERS | 否   | 管理员用户 ID，多个用逗号分隔                          | 123456789,987654321                                                                       |
+| RSS_URLS             | 否   | RSS 订阅地址，多个组用分号分隔，组内多个地址用逗号分隔 | https://example1.com/feed.xml,https://example2.com/feed.xml;https://example3.com/feed.xml |
+| RSS_KEYWORDS_0       | 否   | 第一组 RSS 的关键词，多个用逗号分隔                    | vps,优惠,免费                                                                             |
+| RSS_INTERVAL_0       | 否   | 第一组 RSS 的更新间隔（秒）                            | 300                                                                                       |
+| RSS_GROUP_0          | 否   | 第一组 RSS 的分组名称                                  | 科技新闻                                                                                  |
+| TZ                   | 否   | 时区设置                                               | Asia/Shanghai                                                                             |
+
+#### 2.2.3 配置注意事项
+
+1. **优先级说明**
+
+   - 环境变量的优先级高于配置文件
+   - 如果同时设置了环境变量和配置文件，将使用环境变量的值
+
+2. **配置更新机制**
+
+   - 系统每分钟自动检测配置文件变化
+   - 配置文件变更后无需重启，自动生效
+
+3. **安全建议**
+   - 不要在公开环境中暴露 bot_token
+   - 建议设置 adminuser 限制管理权限
+   - 定期更新和检查用户权限
+
+### 2.3 权限说明
+
+系统实现了基本的权限控制机制：
+
+1. 管理员权限：
+
+   - 如果未配置 `adminuser`，所有在 `users` 列表中的用户都具有管理员权限
+   - 如果配置了 `adminuser`，则只有在该列表中的用户才具有管理员权限
+   - 管理员可以执行所有操作，包括添加/删除用户、管理 RSS 订阅等
+
+2. 普通用户权限：
+   - 可以查看所有信息（配置、订阅列表、用户列表等）
+   - 不能执行管理操作（添加/删除用户、管理 RSS 订阅）
+   - 尝试执行管理操作时会收到提示："您不是系统管理员，无法操作"
+
+### 2.4 命令说明
+
+机器人支持以下命令：
+
+主要命令：
+
+- `/start` - 开始使用机器人并查看帮助信息
+- `/view` - 查看类命令合集
+- `/users` - 用户管理命令合集
+- `/edit` - 编辑类命令合集
+- `/stats` - 查看推送统计
+
+查看类命令（使用 `/view` 查看）：
+
+- `/config` - 查看当前配置
+- `/list` - 列出所有 RSS 订阅
+- `/stats` - 查看推送统计
+- `/version` - 获取当前版本信息
+
+用户管理命令（使用 `/users` 查看）：
+
+- `/add_user` - 添加用户（需要管理员权限）
+- `/del_user` - 删除用户（需要管理员权限）
+- `/list_users` - 查看用户列表
+
+编辑类命令（使用 `/edit` 查看）：
+
+- `/add` - 添加 RSS 订阅（需要管理员权限）
+- `/edit` - 编辑 RSS 订阅（需要管理员权限）
+- `/delete` - 删除 RSS 订阅（需要管理员权限）
+- `/add_all` - 向所有订阅添加关键词（需要管理员权限）
+- `/del_all` - 从所有订阅删除关键词（需要管理员权限）
+
+### 2.5 环境变量说明
+
+可以通过以下环境变量配置机器人：
+
+```bash
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_USERS=user_id_1,user_id_2
+TELEGRAM_CHANNELS=@channel_1,@channel_2
+TELEGRAM_ADMIN_USERS=admin_id_1,admin_id_2  # 管理员用户ID，可选
+```
+
+### 2.6 用户管理
+
+1. 添加用户（需要管理员权限）：
+
+   - 使用 `/add_user` 命令
+   - 输入要添加的用户 ID（多个 ID 用空格分隔）
+   - 新添加的用户默认为普通用户权限
+
+2. 删除用户（需要管理员权限）：
+
+   - 使用 `/del_user` 命令
+   - 查看当前用户列表
+   - 输入要删除的用户编号
+
+3. 查看用户列表：
+
+   - 使用 `/list_users` 命令
+   - 显示所有已添加的用户 ID
+
+4. 设置管理员：
+   - 在配置文件中添加 `adminuser` 字段
+   - 或通过环境变量 `TELEGRAM_ADMIN_USERS` 设置
+   - 多个管理员 ID 用逗号分隔
+
+注意：如果未设置管理员，所有用户都具有管理员权限。建议在生产环境中明确设置管理员用户。
+
+### 2.7 Bot 使用方法及命令
 
 Bot 支持以下命令：
 
@@ -122,7 +255,7 @@ Bot 支持以下命令：
 - `/list` - 列出所有 RSS 订阅
 - `/stats` - 查看推送统计
 
-### 2.3 添加 RSS 订阅
+### 2.8 添加 RSS 订阅
 
 #### 方式一
 
@@ -157,22 +290,22 @@ rss:
 
 **_两种方式都可以，系统会每 1 分钟自动检测，即使动态更改生效。_**
 
-### 2.4 编辑 RSS 订阅
+### 2.9 编辑 RSS 订阅
 
 1. 发送 `/edit` 命令给 Bot。
 2. 输入要编辑的 RSS 订阅编号。
 3. 按提示修改 URL、更新间隔、关键词和组名。如果不需要修改某项，直接输入 1。
 
-### 2.5 删除 RSS 订阅
+### 2.10 删除 RSS 订阅
 
 1. 发送 `/delete` 命令给 Bot。
 2. 输入要删除的 RSS 订阅编号。
 
-### 2.6 查看订阅列表
+### 2.11 查看订阅列表
 
 发送 `/list` 命令给 Bot，查看当前所有 RSS 订阅。
 
-### 2.7 查看推送统计
+### 2.12 查看推送统计
 
 发送 `/stats` 命令给 Bot，查看今日和本周的推送数量。
 
@@ -205,8 +338,7 @@ docker logs rss2tg
 
 #
 
-> [!TIP] >**_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._** <br> >**_ Support AMD64/ARM64_** <br> >**_ Image size 17M, memory footprint 10M_** <br>
-> **——By [drfyup](https://hstz.com)**
+> [!TIP] >**_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._** <br> >**_ Support AMD64/ARM64_** <br> >**_ Image size 17M, memory footprint 10M_** <br> > **——By [drfyup](https://hstz.com)**
 
 #
 
@@ -296,19 +428,20 @@ telegram:
   channels:
     - "@channel_1"
     - "@channel_2"
-#The priority of the tg configuration here is lower than that of the environment variable. If you fill in here, this configuration will not be read until one minute later.
+  adminuser: # 管理员用户配置（可选）
+    - "admin_id_1"
+    - "admin_id_2"
+
 rss:
-  - url: "https://example.com/feed1.xml"
+  - urls:
+      - "https://example.com/feed1.xml"
+      - "https://example.com/feed2.xml"
     interval: 300
     keywords:
       - "keyword1"
       - "keyword2"
     group: "Group1"
-  - url: "https://example.com/feed2.xml"
-    interval: 600
-    keywords:
-      - "keyword3"
-    group: "Group2"
+    allow_part_match: true # 是否允许部分关键词匹配
 ```
 
 ### 2.2 How to use Bot and commands

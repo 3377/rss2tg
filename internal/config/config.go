@@ -15,9 +15,10 @@ import (
 // Config 定义了整个应用的配置结构
 type Config struct {
     Telegram struct {
-        BotToken  string   `yaml:"bot_token"`
-        Users     []string `yaml:"users"`
-        Channels  []string `yaml:"channels"`
+        BotToken    string   `yaml:"bot_token"`
+        Users       []string `yaml:"users"`
+        Channels    []string `yaml:"channels"`
+        AdminUsers  []string `yaml:"adminuser,omitempty"`  // 管理员用户ID列表
     } `yaml:"telegram"`
     RSS []RSSEntry `yaml:"rss"`
 }
@@ -172,6 +173,14 @@ func Load(path string) (*Config, error) {
     if len(config.Telegram.Channels) == 0 {
         if channels := os.Getenv("TELEGRAM_CHANNELS"); channels != "" {
             config.Telegram.Channels = strings.Split(channels, ",")
+            configChanged = true
+        }
+    }
+
+    // 检查并补充管理员配置
+    if len(config.Telegram.AdminUsers) == 0 {
+        if adminUsers := os.Getenv("TELEGRAM_ADMIN_USERS"); adminUsers != "" {
+            config.Telegram.AdminUsers = strings.Split(adminUsers, ",")
             configChanged = true
         }
     }
