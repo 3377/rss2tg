@@ -1,7 +1,6 @@
 package rss
 
 import (
-    "fmt"
     "log"
     "net/http"
     "strings"
