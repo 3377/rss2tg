@@ -4,7 +4,11 @@
 
 #
 
-> [!TIP] > **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_** <br> > **_支持 AMD64/ARM64_** <br> > **_镜像大小 17M，内存占用 10M_** <br> > **——By [drfyup](https://hstz.com)**
+> [!TIP]
+> **_简称 rss2tg，用于将自定义 RSS 地址，字段，刷新时间里的相关帖子即时发送到自定义 TG 用户或频道，省去你刷帖子的时间_**
+> **_支持 AMD64/ARM64_**
+> **_镜像大小 17M，内存占用 10M_**
+> **——By [drfyup](https://hstz.com)**
 
 #
 
@@ -182,7 +186,6 @@ rss:
 - `/view` - 查看类命令合集
 - `/users` - 用户管理命令合集
 - `/edit` - 编辑类命令合集
-- `/stats` - 查看推送统计
 
 查看类命令（使用 `/view` 查看）：
 
@@ -338,7 +341,11 @@ docker logs rss2tg
 
 #
 
-> [!TIP] >**_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._** <br> >**_ Support AMD64/ARM64_** <br> >**_ Image size 17M, memory footprint 10M_** <br> > **——By [drfyup](https://hstz.com)**
+> [!TIP]
+> **_ Referred to as rss2tg, it is used to instantly send related posts in custom RSS addresses, fields, and refresh times to custom TG users or channels, eliminating the time for you to swipe posts._**
+> **_ Support AMD64/ARM64_**
+> **_ Image size 17M, memory footprint 10M_**
+> **——By [drfyup](https://hstz.com)**
 
 #
 
