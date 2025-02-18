@@ -171,16 +171,29 @@ func (b *Bot) Start() {
 
 // escapeMarkdownV2Text 转义普通文本中的特殊字符
 func escapeMarkdownV2Text(text string) string {
-    // 按照 Telegram MarkdownV2 格式要求转义特殊字符
-    specialChars := []string{
-        "_", "*", "[", "]", "(", ")", "~", "`", ">",
-        "#", "+", "-", "=", "|", "{", "}", ".", "!",
-        "\\",  // 必须首先转义反斜杠
-    }
-    
-    for _, char := range specialChars {
-        text = strings.ReplaceAll(text, char, "\\"+char)
-    }
+    // 首先转义反斜杠，这样不会影响后续的转义
+    text = strings.ReplaceAll(text, "\\", "\\\\")
+
+    // 其他特殊字符的转义
+    text = strings.ReplaceAll(text, "_", "\\_")
+    text = strings.ReplaceAll(text, "*", "\\*")
+    text = strings.ReplaceAll(text, "[", "\\[")
+    text = strings.ReplaceAll(text, "]", "\\]")
+    text = strings.ReplaceAll(text, "(", "\\(")
+    text = strings.ReplaceAll(text, ")", "\\)")
+    text = strings.ReplaceAll(text, "~", "\\~")
+    text = strings.ReplaceAll(text, "`", "\\`")
+    text = strings.ReplaceAll(text, ">", "\\>")
+    text = strings.ReplaceAll(text, "#", "\\#")
+    text = strings.ReplaceAll(text, "+", "\\+")
+    text = strings.ReplaceAll(text, "-", "\\-")
+    text = strings.ReplaceAll(text, "=", "\\=")
+    text = strings.ReplaceAll(text, "|", "\\|")
+    text = strings.ReplaceAll(text, "{", "\\{")
+    text = strings.ReplaceAll(text, "}", "\\}")
+    text = strings.ReplaceAll(text, ".", "\\.")
+    text = strings.ReplaceAll(text, "!", "\\!")
+
     return text
 }
 
@@ -189,6 +202,7 @@ func formatBoldText(text string) string {
     if text == "" {
         return "*无*"
     }
+    // 先转义特殊字符，再添加加粗标记
     return "*" + escapeMarkdownV2Text(text) + "*"
 }
 
@@ -205,7 +219,9 @@ func (b *Bot) SendMessage(title, url, group string, pubDate time.Time, matchedKe
     // 处理关键词（加粗并添加#）
     formattedKeywords := make([]string, len(matchedKeywords))
     for i, keyword := range matchedKeywords {
-        formattedKeywords[i] = "\\#" + formatBoldText(keyword)
+        // 先转义关键词，再添加#和加粗
+        escapedKeyword := escapeMarkdownV2Text(keyword)
+        formattedKeywords[i] = "\\#*" + escapedKeyword + "*"
     }
     
     // 处理分组（加粗）
