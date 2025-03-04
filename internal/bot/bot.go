@@ -685,7 +685,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Interval = interval
             }
             b.userState[userID] = fmt.Sprintf("edit_keywords_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用空格分隔，如不修改请输入1）：", b.config.RSS[index].Keywords))
+            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用空格分隔，不输入关键词会默认推送所有新文章。如不修改关键词请输入1）：", b.config.RSS[index].Keywords))
         } else if strings.HasPrefix(b.userState[userID], "edit_keywords_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_keywords_"))
             if text != "1" {

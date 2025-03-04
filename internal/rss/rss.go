@@ -135,8 +135,18 @@ func (m *Manager) checkFeed(feed *Feed, url string) {
 
     for _, item := range parsedFeed.Items {
         matchedKeywords := m.matchKeywords(item, feed)
+        // 修改判断逻辑：如果没有配置关键词或者匹配到了关键词，就发送消息
         if len(matchedKeywords) > 0 {
-            log.Printf("发现新项目: %s", item.Title)
+            var logMessage string
+            if matchedKeywords[0] == "__NO_KEYWORDS__" {
+                logMessage = "发现新项目（无关键词过滤）"
+                // 使用空数组，这样在消息中就不会显示关键词
+                matchedKeywords = []string{}
+            } else {
+                logMessage = "发现新项目"
+            }
+            log.Printf("%s: %s", logMessage, item.Title)
+            
             if err := m.messageHandler(item.Title, item.Link, feed.Group, *item.PublishedParsed, matchedKeywords); err != nil {
                 log.Printf("发送消息失败: %v", err)
             } else {
@@ -205,7 +215,8 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
     }
 
     if len(feed.Keywords) == 0 {
-        return []string{"无关键词"}
+        // 如果没有配置关键词，返回一个特殊标记
+        return []string{"__NO_KEYWORDS__"}
     }
 
     // 标准化文本
