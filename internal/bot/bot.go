@@ -520,7 +520,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         if lastIndex >= 0 {
             b.config.RSS[lastIndex].Interval = interval
             b.userState[userID] = "add_keywords"
-            b.sendMessage(chatID, "请输入关键词（用空格分隔，如果没有可以直接输入1）：")
+            b.sendMessage(chatID, "请输入关键词（用空格分隔）：\n1: 保持原有关键词\n2: 不设置关键词（将推送所有新文章）\n或直接输入新的关键词")
         } else {
             b.sendMessage(chatID, "添加订阅失败：找不到要编辑的订阅")
             delete(b.userState, userID)
@@ -528,8 +528,15 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
     case "add_keywords":
         lastIndex := len(b.config.RSS) - 1
         if lastIndex >= 0 {
-            if text != "1" {
-                keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
+            switch text {
+            case "1":
+                // 保持原有关键词，不做任何修改
+            case "2":
+                // 清空关键词，将推送所有新文章
+                b.config.RSS[lastIndex].Keywords = []string{}
+            default:
+                // 使用新输入的关键词
+                keywords := strings.Fields(text)
                 b.config.RSS[lastIndex].Keywords = keywords
             }
             b.userState[userID] = "add_group"
@@ -685,11 +692,18 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
                 b.config.RSS[index].Interval = interval
             }
             b.userState[userID] = fmt.Sprintf("edit_keywords_%d", index)
-            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用空格分隔，不输入关键词会默认推送所有新文章。如不修改关键词请输入1）：", b.config.RSS[index].Keywords))
+            b.sendMessage(chatID, fmt.Sprintf("当前关键词为：%v\n请输入新的关键词（用空格分隔）：\n1: 保持原有关键词\n2: 不设置关键词（将推送所有新文章）\n或直接输入新的关键词", b.config.RSS[index].Keywords))
         } else if strings.HasPrefix(b.userState[userID], "edit_keywords_") {
             index, _ := strconv.Atoi(strings.TrimPrefix(b.userState[userID], "edit_keywords_"))
-            if text != "1" {
-                keywords := strings.Fields(text) // 使用 Fields 替代 Split，自动按空格分割
+            switch text {
+            case "1":
+                // 保持原有关键词，不做任何修改
+            case "2":
+                // 清空关键词，将推送所有新文章
+                b.config.RSS[index].Keywords = []string{}
+            default:
+                // 使用新输入的关键词
+                keywords := strings.Fields(text)
                 b.config.RSS[index].Keywords = keywords
             }
             b.userState[userID] = fmt.Sprintf("edit_group_%d", index)
