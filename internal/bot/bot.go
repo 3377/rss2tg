@@ -36,6 +36,12 @@ func NewBot(token string, users []string, channels []string, db *storage.Storage
     if err != nil {
         return nil, err
     }
+    
+    // Check if custom API URL is set
+    if apiURL := os.Getenv("TELEGRAM_API_URL"); apiURL != "" {
+        log.Printf("使用自定义 Telegram API URL: %s", apiURL)
+        api.SetAPIEndpoint(apiURL)
+    }
 
     userIDs := make([]int64, len(users))
     for i, user := range users {

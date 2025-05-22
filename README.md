@@ -73,6 +73,7 @@ docker run -d \
 -e TELEGRAM_BOT_TOKEN=your_bot_token_here \
 -e TELEGRAM_USERS=user_id_1,user_id_2 \
 -e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
+-e TELEGRAM_API_URL=http://xxx.deno.dev/telegram \
 -e TZ=Asia/Shanghai \
 --restart unless-stopped \
 drfyup/rss2tg:latest
@@ -138,6 +139,7 @@ rss:
 | TELEGRAM_USERS       | 是   | 接收消息的用户 ID，多个用逗号分隔                                                                           | 123456789,987654321                                                                               |
 | TELEGRAM_CHANNELS    | 否   | 接收消息的频道，多个用逗号分隔                                                                              | @channel1,@channel2                                                                               |
 | TELEGRAM_ADMIN_USERS | 否   | 管理员用户 ID，多个用逗号分隔                                                                               | 123456789,987654321                                                                               |
+| TELEGRAM_API_URL     | 否   | 自定义 Telegram API 服务器地址，用于在无法直接访问官方API的环境中使用代理                                    | http://fyapi.deno.dev/telegram                                                                    |
 | RSS_URLS             | 否   | RSS 订阅地址，多个组用分号分隔，组内多个地址用逗号分隔。<br>每组可以包含多个 RSS 源，组与组之间用分号隔开。 | https://example1.com/feed.xml,<br>https://example2.com/feed.xml;<br>https://example3.com/feed.xml |
 | RSS_KEYWORDS_0       | 否   | 第一组 RSS 的关键词，多个用逗号分隔。<br>数字代表组的索引，从 0 开始。                                      | vps,优惠,免费                                                                                     |
 | RSS_INTERVAL_0       | 否   | 第一组 RSS 的更新间隔（秒）。<br>数字代表组的索引，从 0 开始。                                              | 300                                                                                               |
@@ -224,6 +226,7 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_USERS=user_id_1,user_id_2
 TELEGRAM_CHANNELS=@channel_1,@channel_2
 TELEGRAM_ADMIN_USERS=admin_id_1,admin_id_2  # 管理员用户ID，可选
+TELEGRAM_API_URL=http://fyapi.deno.dev/telegram  # 自定义 Telegram API 地址，用于国内代理访问
 ```
 
 ### 2.6 用户管理
@@ -397,7 +400,7 @@ services:
     restart: unless-stopped
 ```
 
-Replace `your_bot_token_here` with your Telegram Bot Token, `user_id_1, user_id_2` with the user ID you want to receive the message, and `@channel_1, @channel_2` with the channel name you want to send the message, `TZ=Asia/Shanghai` with your timezone settings.
+Replace `your_bot_token_here` with your Telegram Bot Token, `user_id_1, user_id_2` with the user ID you want to receive the message, `@channel_1, @channel_2` with the channel name you want to send the message, `TELEGRAM_API_URL` with your custom Telegram API URL (useful for proxy servers in restricted regions), and `TZ=Asia/Shanghai` with your timezone settings.
 
 5. Run the following command to start the container：
 
@@ -423,6 +426,7 @@ docker run -d \
 -e TELEGRAM_BOT_TOKEN=your_bot_token_here \
 -e TELEGRAM_USERS=user_id_1,user_id_2 \
 -e TELEGRAM_CHANNELS=@channel_1,@channel_2 \
+-e TELEGRAM_API_URL=http://fyapi.deno.dev/telegram \
 -e TZ=Asia/Shanghai \
 --restart unless-stopped \
 drfyup/rss2tg:latest
@@ -543,6 +547,64 @@ docker logs rss2tg
 
 If you have other questions, please refer to the project's GitHub page or submit an issue.
 
-# Paste a rendering <br>
+# Paste a rendering <br>![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
 
-![image](https://github.com/user-attachments/assets/4e9ac180-5eb1-40a8-98e1-03b9fa68b691)
+## 5. 在中国大陆服务器上使用
+
+在中国大陆服务器上部署 RSS2TG 机器人时，由于网络限制，可能无法直接访问 Telegram 官方 API。为了解决这个问题，本项目支持通过自定义 API URL 使用代理服务进行通信。
+
+### 5.1 使用代理
+
+1. 设置环境变量 `TELEGRAM_API_URL`，指向可用的代理服务地址，例如：
+   ```bash
+   TELEGRAM_API_URL=http://fyapi.deno.dev/telegram
+   ```
+
+2. 在 docker-compose.yml 中配置：
+   ```yaml
+   environment:
+     - TELEGRAM_BOT_TOKEN=your_bot_token_here
+     - TELEGRAM_USERS=user_id_1,user_id_2
+     - TELEGRAM_API_URL=http://fyapi.deno.dev/telegram
+     - TZ=Asia/Shanghai
+   ```
+
+3. 应用重启后，机器人将通过配置的代理地址与 Telegram 进行通信。
+
+### 5.2 注意事项
+
+- 确保代理服务稳定可靠，否则可能导致消息发送失败
+- 定期检查日志，确保通信正常
+- 可能需要根据代理服务的要求进行额外设置
+
+如果您使用 `http://fyapi.deno.dev/telegram` 作为代理，通常无需额外配置即可使用。
+
+## 5. Using in Mainland China
+
+When deploying RSS2TG bot on servers in mainland China, due to network restrictions, direct access to the official Telegram API might be unavailable. To solve this issue, this project supports using a proxy service through a custom API URL.
+
+### 5.1 Using a Proxy
+
+1. Set the environment variable `TELEGRAM_API_URL` pointing to an available proxy service address, for example:
+   ```bash
+   TELEGRAM_API_URL=http://fyapi.deno.dev/telegram
+   ```
+
+2. Configure in docker-compose.yml:
+   ```yaml
+   environment:
+     - TELEGRAM_BOT_TOKEN=your_bot_token_here
+     - TELEGRAM_USERS=user_id_1,user_id_2
+     - TELEGRAM_API_URL=http://fyapi.deno.dev/telegram
+     - TZ=Asia/Shanghai
+   ```
+
+3. After restarting the application, the bot will communicate with Telegram through the configured proxy address.
+
+### 5.2 Important Notes
+
+- Ensure the proxy service is stable and reliable, otherwise message delivery may fail
+- Regularly check logs to ensure communication is normal
+- Additional configuration may be required depending on the proxy service's requirements
+
+If you use `http://fyapi.deno.dev/telegram` as a proxy, typically no additional configuration is needed.

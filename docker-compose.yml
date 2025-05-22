@@ -7,8 +7,9 @@ services:
       - ./config/config.yaml:/app/config/config.yaml
       - ./data:/app/data
     environment:
-      - TELEGRAM_BOT_TOKEN=
-      - TELEGRAM_USERS=
-      - TELEGRAM_CHANNELS=
-      - TZ=Asia/Shanghai
+      - TELEGRAM_BOT_TOKEN=  # 你的Telegram Bot Token
+      - TELEGRAM_USERS=      # 接收消息的用户ID，多个用逗号分隔
+      - TELEGRAM_CHANNELS=   # 接收消息的频道，多个用逗号分隔
+      - TELEGRAM_API_URL=http://xxx.deno.dev/telegram  # 自定义Telegram API地址 (国内服务器无法直接访问api.telegram.org时使用)
+      - TZ=Asia/Shanghai     # 时区设置
     restart: unless-stopped
