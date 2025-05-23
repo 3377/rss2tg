@@ -11,7 +11,7 @@ import (
     "github.com/mmcdole/gofeed"
     "rss2tg/internal/storage"
 )
-
+ 
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 
 type Manager struct {
@@ -93,7 +93,6 @@ func (m *Manager) pollFeed(feed *Feed) {
         select {
         case <-feed.ticker.C:
             for _, url := range feed.URLs {
-                log.Printf("检查feed: %s", url)
                 m.checkFeed(feed, url)
             }
         case <-feed.stopChan:
@@ -104,6 +103,9 @@ func (m *Manager) pollFeed(feed *Feed) {
 }
 
 func (m *Manager) checkFeed(feed *Feed, url string) {
+    // 开始检查Feed的日志
+    log.Printf("🔍 开始检查Feed: %s", url)
+    
     fp := gofeed.NewParser()
     
     // 创建自定义的 HTTP 客户端
@@ -114,7 +116,7 @@ func (m *Manager) checkFeed(feed *Feed, url string) {
     // 创建自定义的请求
     req, err := http.NewRequest("GET", url, nil)
     if err != nil {
-        log.Printf("创建请求失败 %s: %v", url, err)
+        log.Printf("❌ 创建请求失败 %s: %v", url, err)
         return
     }
     
@@ -129,32 +131,67 @@ func (m *Manager) checkFeed(feed *Feed, url string) {
     fp.Client = client
     parsedFeed, err := fp.ParseURL(url)
     if err != nil {
-        log.Printf("解析Feed %s失败: %v", url, err)
+        log.Printf("❌ 解析Feed失败 %s: %v", url, err)
+        return
+    }
+
+    // 统计信息
+    totalArticles := len(parsedFeed.Items)
+    newArticles := 0
+    matchedArticles := 0
+    
+    log.Printf("📊 Feed包含 %d 篇文章", totalArticles)
+    
+    if totalArticles == 0 {
+        log.Printf("📝 Feed检查完成: %s - 无新文章", url)
         return
     }
 
     for _, item := range parsedFeed.Items {
         matchedKeywords := m.matchKeywords(item, feed)
+        
+        // 如果文章未曾发送过，说明是新文章
+        if !m.db.WasSent(item.Link) {
+            newArticles++
+        }
+        
         // 修改判断逻辑：如果没有配置关键词或者匹配到了关键词，就发送消息
         if len(matchedKeywords) > 0 {
+            matchedArticles++
+            
+            // 根据URL获取简短的RSS源名称用于日志
             var logMessage string
+            var keywordInfo string
+            
             if matchedKeywords[0] == "__NO_KEYWORDS__" {
-                logMessage = "发现新项目（无关键词过滤）"
+                logMessage = "✅ 发现新文章"
+                keywordInfo = "无关键词过滤"
                 // 使用空数组，这样在消息中就不会显示关键词
                 matchedKeywords = []string{}
             } else {
-                logMessage = "发现新项目"
+                logMessage = "🎯 发现匹配文章"
+                keywordInfo = strings.Join(matchedKeywords, ", ")
             }
-            log.Printf("%s: %s", logMessage, item.Title)
+            
+            log.Printf("%s: [%s] 标题: %s | 匹配关键词: %s", logMessage, url, item.Title, keywordInfo)
             
             if err := m.messageHandler(item.Title, item.Link, feed.Group, *item.PublishedParsed, matchedKeywords); err != nil {
-                log.Printf("发送消息失败: %v", err)
+                log.Printf("❌ 发送消息失败: %v", err)
             } else {
-                log.Printf("成功发送项目的消息: %s", item.Title)
+                log.Printf("✅ 消息发送成功: %s", item.Title)
                 m.db.MarkAsSent(item.Link)
+            }
+        } else {
+            // 如果是新文章但未匹配关键词
+            if !m.db.WasSent(item.Link) {
+                log.Printf("📄 新文章未匹配关键词: [%s] %s", url, item.Title)
             }
         }
     }
+    
+    // 输出Feed检查摘要
+    log.Printf("📝 Feed检查完成: %s | 总文章: %d, 新文章: %d, 匹配文章: %d", 
+        url, totalArticles, newArticles, matchedArticles)
 }
 
 // normalizeText 标准化文本，处理特殊字符和空白
@@ -257,25 +294,6 @@ func (m *Manager) matchKeywords(item *gofeed.Item, feed *Feed) []string {
                 }
             }
         }
-    }
-
-    // 根据是否匹配到关键词来决定日志输出级别
-    if len(matched) > 0 {
-        // 如果匹配到关键词，输出详细日志
-        log.Printf("📝 发现匹配文章:\n"+
-            "   标题: %s\n"+
-            "   描述: %s\n"+
-            "   链接: %s\n"+
-            "   部分匹配: %s\n"+
-            "✨ 匹配关键词: %v",
-            item.Title,
-            item.Description,
-            item.Link,
-            map[bool]string{true: "允许", false: "禁用"}[feed.AllowPartMatch],
-            matched)
-    } else {
-        // 如果未匹配到关键词，只输出简单的监听状态
-        log.Printf("👀 监听RSS: %s, 标题: %s", feed.URLs[0], item.Title)
     }
 
     return matched
