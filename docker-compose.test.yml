@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   rss2tg:
-    build: .
+    container_name: rss2tg
+    image: drfyup/rss2tg:latest
     environment:
       # Telegram配置
       TELEGRAM_BOT_TOKEN: "your_bot_token_here"
