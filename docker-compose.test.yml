@@ -6,39 +6,31 @@ services:
     image: drfyup/rss2tg:latest
     environment:
       # Telegram配置
-      TELEGRAM_BOT_TOKEN: "your_bot_token_here"
-      TELEGRAM_USERS: "5147678880"
-      TELEGRAM_CHANNELS: "@hstzw"
-      
-      # RSS源1: NodeSeek
-      RSS_URLS_1: "https://nodeseek.com/rss.xml"
-      RSS_KEYWORDS_1: "免费,白嫖,优惠,活动"
-      RSS_INTERVAL_1: "600"
-      RSS_GROUP_1: "NodeSeek"
-      RSS_ALLOW_PART_MATCH_1: "true"
-      
-      # RSS源2: LinuxDo
-      RSS_URLS_2: "https://linuxdo.org/latest.rss"
-      RSS_KEYWORDS_2: "分享,教程"
-      RSS_INTERVAL_2: "300"
-      RSS_GROUP_2: "LinuxDo"
-      RSS_ALLOW_PART_MATCH_2: "true"
-      
-      # RSS源3: IOS限免
-      RSS_URLS_3: "https://appstorene.ws/rss"
-      RSS_KEYWORDS_3: "限免,免费"
-      RSS_INTERVAL_3: "1800"
-      RSS_GROUP_3: "IOS限免"
-      RSS_ALLOW_PART_MATCH_3: "true"
-      
-      # RSS源4: 卡圈
-      RSS_URLS_4: "https://www.kaquan.com/feed"
-      RSS_KEYWORDS_4: "优惠,羊毛,活动"
-      RSS_INTERVAL_4: "1800"
-      RSS_GROUP_4: "卡圈"
-      RSS_ALLOW_PART_MATCH_4: "true"
-      
+      TELEGRAM_BOT_TOKEN: "TELEGRAM_BOT_TOKEN"
+      TELEGRAM_USERS: "TELEGRAM_USERS"
+      TELEGRAM_CHANNELS: "TELEGRAM_CHANNELS"
+
+      RSS_URLS_1: https://rss.nodeseek.com
+      RSS_INTERVAL_1: 30
+      RSS_KEYWORDS_1: 甲骨文,vps,域名,免费,api,cursor
+      RSS_GROUP_1: NodeSeek论坛
+
+      RSS_URLS_2: https://linux.do/latest.rss
+      RSS_INTERVAL_2: 60
+      RSS_KEYWORDS_2: 甲骨文,vps,域名,免费,api,cursor
+      RSS_GROUP_2: LinuxDo论坛
+
+      RSS_URLS_3: https://free.apprcn.com/feed/
+      RSS_INTERVAL_3: 30
+      RSS_KEYWORDS_3:
+      RSS_GROUP_3: IOS限免
+
+      RSS_URLS_4: https://kahaoquan.com/forum.php?mod:rss
+      RSS_INTERVAL_4: 60
+      RSS_KEYWORDS_4:
+      RSS_GROUP_4: 卡圈
+
     volumes:
       - ./config:/app/config
       - ./data:/app/data
-    restart: unless-stopped 
+    restart: unless-stopped
