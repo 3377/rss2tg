@@ -406,6 +406,37 @@ func LoadFromEnv() *Config {
         config.Telegram.AdminUsers = strings.Split(adminUsers, ",")
     }
 
+    // 加载 Webhook 配置
+    if webhookEnabled := os.Getenv("WEBHOOK_ENABLED"); webhookEnabled != "" {
+        if webhookEnabled == "true" || webhookEnabled == "1" {
+            config.Webhook.Enabled = true
+        }
+    }
+    
+    if webhookURL := os.Getenv("WEBHOOK_URL"); webhookURL != "" {
+        config.Webhook.URL = webhookURL
+    }
+    
+    if webhookTimeout := os.Getenv("WEBHOOK_TIMEOUT"); webhookTimeout != "" {
+        if timeout, err := strconv.Atoi(webhookTimeout); err == nil && timeout > 0 {
+            config.Webhook.Timeout = timeout
+        }
+    }
+    // 设置默认超时时间
+    if config.Webhook.Timeout == 0 {
+        config.Webhook.Timeout = 10
+    }
+    
+    if webhookRetryCount := os.Getenv("WEBHOOK_RETRY_COUNT"); webhookRetryCount != "" {
+        if retryCount, err := strconv.Atoi(webhookRetryCount); err == nil && retryCount >= 0 {
+            config.Webhook.RetryCount = retryCount
+        }
+    }
+    // 设置默认重试次数
+    if config.Webhook.RetryCount == 0 {
+        config.Webhook.RetryCount = 3
+    }
+
     // 加载RSS配置 - 优先使用新格式RSS_URLS_1, RSS_URLS_2等
     rssEntries := make([]RSSEntry, 0)
     

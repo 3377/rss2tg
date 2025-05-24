@@ -701,13 +701,18 @@ docker run -d \
   "timestamp": "timestamp"
 }
 ```
-5. 配置构建规则：
+5. 配置构建规则（**重要**：根据 message-pusher 限制，只有 `content` 和 `description` 字段有效）：
 ```json
 {
-  "content": "### 【$group】RSS推送\n\n**标题：** $title\n\n**内容：** $content\n\n**关键词：** $keywords\n\n**链接：** [$url]($url)\n\n**时间：** $timestamp"
+  "content": "### 📰 【$group】RSS推送\n\n**标题：** $title\n\n**链接：** $url\n\n**关键词：** $keywords\n\n**时间：** $timestamp"
 }
 ```
 6. 复制生成的 webhook URL
+
+**配置说明**：
+- 提取规则：定义从 rss2tg 发送的 JSON 数据中提取哪些字段
+- 构建规则：只能使用 `content` 和 `description` 字段，其他字段会导致数据为空
+- 推荐使用 `content` 字段，支持 Markdown 格式，显示效果更好
 
 ### 3. 配置 rss2tg
 
@@ -801,7 +806,8 @@ rss:
 ### Webhook 推送失败
 1. 检查 webhook URL 是否正确
 2. 确认 message-pusher 服务是否正常运行
-3. 查看日志中的错误信息：
+3. 检查 message-pusher 构建规则是否只使用了 `content` 和 `description` 字段
+4. 查看日志中的错误信息：
 ```bash
 docker logs rss2tg
 ```
@@ -810,6 +816,11 @@ docker logs rss2tg
 1. 检查环境变量是否正确设置
 2. 确认配置文件格式是否正确
 3. 重启容器使配置生效
+
+### message-pusher 配置问题
+1. **构建规则限制**：只能使用 `content` 和 `description` 字段，使用其他字段会导致数据为空
+2. **提取规则格式**：确保字段名与 rss2tg 发送的 JSON 数据字段一致
+3. **变量引用**：在构建规则中使用 `$变量名` 格式引用提取的数据
 
 ## 技术特性
 

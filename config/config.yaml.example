@@ -17,6 +17,22 @@ webhook:
   timeout: 10     # 请求超时时间（秒）
   retry_count: 3  # 失败重试次数
 
+# 注意：message-pusher webhook 配置说明
+# 1. 提取规则应配置为：
+#    {
+#      "title": "title",
+#      "description": "description", 
+#      "content": "content",
+#      "url": "url",
+#      "group": "group",
+#      "keywords": "keywords",
+#      "timestamp": "timestamp"
+#    }
+# 2. 构建规则只能使用 content 和 description 字段，推荐：
+#    {
+#      "content": "### 📰 【$group】RSS推送\n\n**标题：** $title\n\n**链接：** $url\n\n**关键词：** $keywords\n\n**时间：** $timestamp"
+#    }
+
 # RSS 订阅配置
 rss:
   - urls:
