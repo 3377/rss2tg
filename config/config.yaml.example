@@ -2,13 +2,15 @@
 
 # Telegram 配置
 telegram:
-  bot_token: "your_telegram_bot_token"
+  bot_token: "your_telegram_bot_token"  # 必填：从 @BotFather 获取的 Bot Token
   users:
-    - "123456789"  # 用户ID列表
+    - "123456789"  # 必填：接收消息的用户 ID 列表
+    - "987654321"  # 可以添加多个用户
   channels:
-    - "@your_channel"  # 频道列表（可选）
+    - "@your_channel"  # 可选：接收消息的频道列表
+    - "@another_channel"
   adminuser:
-    - "123456789"  # 管理员用户ID列表（可选）
+    - "123456789"  # 可选：管理员用户 ID 列表，如果不设置则所有用户都是管理员
 
 # 单个 Webhook 配置（向后兼容）
 webhook:
@@ -19,23 +21,31 @@ webhook:
 
 # 多个 Webhooks 配置（推荐使用）
 webhooks:
+  # 第一个 webhook - 主要推送服务
   - name: "message-pusher-1"
     enabled: true
     url: "http://server1:3000/webhook/webhook_id_1"
     timeout: 10
     retry_count: 3
+  
+  # 第二个 webhook - 备用推送服务
   - name: "message-pusher-2"
     enabled: true
     url: "http://server2:3000/webhook/webhook_id_2"
     timeout: 15
     retry_count: 2
+  
+  # 第三个 webhook - 可以暂时禁用
   - name: "backup-webhook"
-    enabled: false  # 可以暂时禁用某个 webhook
+    enabled: false  # 暂时禁用此 webhook
     url: "http://backup:3000/webhook/backup_id"
     timeout: 5
     retry_count: 1
 
 # 注意：message-pusher webhook 配置说明
+# 详细配置请参考：docs/message-pusher-config.md
+# 
+# 快速配置：
 # 1. 提取规则应配置为：
 #    {
 #      "title": "title",
@@ -46,27 +56,97 @@ webhooks:
 #      "keywords": "keywords",
 #      "timestamp": "timestamp"
 #    }
-# 2. 构建规则只能使用 content 和 description 字段，推荐：
+# 
+# 2. 构建规则（推荐方案一）：
 #    {
-#      "content": "### 📰 【$group】RSS推送\n\n**标题：** $title\n\n$url\n\n**关键词：** $keywords\n\n**时间：** $timestamp"
+#      "content": "$content"
 #    }
+# 
+# 重要限制：构建规则中只有 content 和 description 字段有效！
 
 # RSS 订阅配置
 rss:
+  # 第一个 RSS 源 - 技术资讯
   - urls:
       - "https://example.com/rss"
-      - "https://example2.com/feed"
-    interval: 300  # 检查间隔（秒）
+      - "https://example2.com/feed"  # 可以配置多个 URL
+    interval: 300  # 检查间隔（秒），300秒 = 5分钟
     keywords:
       - "关键词1"
       - "关键词2"
+      - "VPS"
+      - "优惠"
     group: "技术资讯"
-    allow_part_match: true  # 是否允许部分匹配
+    allow_part_match: true  # 是否允许部分匹配关键词
 
+  # 第二个 RSS 源 - 新闻资讯
   - urls:
       - "https://news.example.com/rss"
-    interval: 600
+    interval: 600  # 10分钟检查一次
     keywords:
       - "新闻"
+      - "热点"
     group: "新闻资讯"
-    allow_part_match: false 
+    allow_part_match: false  # 只允许完全匹配
+
+  # 第三个 RSS 源 - 无关键词过滤（推送所有文章）
+  - urls:
+      - "https://blog.example.com/feed"
+    interval: 1800  # 30分钟检查一次
+    keywords: []  # 空数组或不设置 keywords 表示推送所有文章
+    group: "博客更新"
+    allow_part_match: true
+
+  # 第四个 RSS 源 - 论坛资讯
+  - urls:
+      - "https://forum.example.com/rss"
+    interval: 180  # 3分钟检查一次（高频更新）
+    keywords:
+      - "免费"
+      - "活动"
+      - "福利"
+    group: "论坛活动"
+    allow_part_match: true
+
+# 配置说明：
+# 
+# 1. 环境变量优先级：
+#    环境变量 > 配置文件 > 默认值
+# 
+# 2. 多 Webhook 配置优先级：
+#    - 如果配置了 webhooks 数组，将优先使用多 webhook 配置
+#    - 如果只配置了 webhook，将使用单个 webhook 配置（向后兼容）
+#    - 如果都没有配置或都未启用，则只进行 Telegram 推送
+# 
+# 3. RSS 配置说明：
+#    - urls: 可以配置多个 RSS 源地址
+#    - interval: 检查间隔，建议不要设置太小（最小30秒）
+#    - keywords: 关键词列表，为空则推送所有文章
+#    - group: 分组名称，用于消息中显示
+#    - allow_part_match: 是否允许部分匹配关键词
+# 
+# 4. 关键词匹配说明：
+#    - 如果设置了关键词，只有包含这些关键词的文章才会被推送
+#    - allow_part_match=true: 文章标题包含关键词的任意部分即匹配
+#    - allow_part_match=false: 文章标题必须包含完整的关键词才匹配
+# 
+# 5. 配置热重载：
+#    - 系统每分钟自动检测配置文件变化
+#    - 配置文件变更后无需重启，自动生效
+# 
+# 6. 环境变量配置示例：
+#    # 基础配置
+#    TELEGRAM_BOT_TOKEN=your_bot_token
+#    TELEGRAM_USERS=123456789,987654321
+#    
+#    # RSS 配置（新格式，推荐）
+#    RSS_URLS_1=https://example.com/rss
+#    RSS_KEYWORDS_1=关键词1,关键词2
+#    RSS_GROUP_1=技术资讯
+#    RSS_INTERVAL_1=300
+#    
+#    # Webhook 配置（多个）
+#    WEBHOOK_URL_1=http://server1:3000/webhook/webhook_id_1
+#    WEBHOOK_NAME_1=message-pusher-1
+#    WEBHOOK_URL_2=http://server2:3000/webhook/webhook_id_2
+#    WEBHOOK_NAME_2=message-pusher-2 
