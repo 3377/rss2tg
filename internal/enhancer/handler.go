@@ -10,15 +10,16 @@ import (
 // MessageHandler 原始消息处理器类型
 type MessageHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 
-// EnhancedMessageHandler 增强消息处理器
+// EnhancedMessageHandler 增强的消息处理器
 type EnhancedMessageHandler struct {
-	originalHandler MessageHandler
+	originalHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error
 	webhookClient   *webhook.Client
+	multiWebhookClient *webhook.MultiClient
 	formatter       *webhook.Formatter
 }
 
-// NewEnhancedMessageHandler 创建新的增强消息处理器
-func NewEnhancedMessageHandler(originalHandler MessageHandler, webhookClient *webhook.Client) *EnhancedMessageHandler {
+// NewEnhancedMessageHandler 创建增强的消息处理器（单个 webhook）
+func NewEnhancedMessageHandler(originalHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error, webhookClient *webhook.Client) *EnhancedMessageHandler {
 	return &EnhancedMessageHandler{
 		originalHandler: originalHandler,
 		webhookClient:   webhookClient,
@@ -26,28 +27,45 @@ func NewEnhancedMessageHandler(originalHandler MessageHandler, webhookClient *we
 	}
 }
 
-// HandleMessage 处理消息，先执行原有的 Telegram 推送，再异步执行 webhook 推送
-func (h *EnhancedMessageHandler) HandleMessage(title, url, group string, pubDate time.Time, matchedKeywords []string) error {
-	// 1. 首先执行原有的 Telegram 推送（保证原功能不变）
-	if err := h.originalHandler(title, url, group, pubDate, matchedKeywords); err != nil {
-		return err // 如果 Telegram 推送失败，直接返回错误
+// NewEnhancedMultiMessageHandler 创建增强的消息处理器（多个 webhook）
+func NewEnhancedMultiMessageHandler(originalHandler func(title, url, group string, pubDate time.Time, matchedKeywords []string) error, multiWebhookClient *webhook.MultiClient) *EnhancedMessageHandler {
+	return &EnhancedMessageHandler{
+		originalHandler: originalHandler,
+		multiWebhookClient: multiWebhookClient,
+		formatter:       webhook.NewFormatter(),
 	}
-
-	// 2. 如果启用了 webhook，则异步执行 webhook 推送
-	if h.webhookClient != nil && h.webhookClient.Enabled {
-		go h.sendToWebhook(title, url, group, pubDate, matchedKeywords)
-	}
-
-	return nil
 }
 
-// sendToWebhook 异步发送到 webhook
-func (h *EnhancedMessageHandler) sendToWebhook(title, url, group string, pubDate time.Time, matchedKeywords []string) {
-	// 格式化消息
-	webhookMsg := h.formatter.FormatMessage(title, url, group, pubDate, matchedKeywords)
-
-	// 发送到 webhook
-	if err := h.webhookClient.Send(webhookMsg); err != nil {
-		log.Printf("Webhook 推送失败: %v", err)
+// HandleMessage 处理消息，同时发送到 Telegram 和 webhook
+func (h *EnhancedMessageHandler) HandleMessage(title, url, group string, pubDate time.Time, matchedKeywords []string) error {
+	// 首先发送到原有的 Telegram 推送
+	err := h.originalHandler(title, url, group, pubDate, matchedKeywords)
+	if err != nil {
+		log.Printf("Telegram 推送失败: %v", err)
+		// 注意：即使 Telegram 推送失败，我们仍然继续 webhook 推送
 	}
+
+	// 异步发送到 webhook（不影响 Telegram 推送）
+	go func() {
+		msg := h.formatter.FormatMessage(title, url, group, pubDate, matchedKeywords)
+		
+		if h.multiWebhookClient != nil {
+			// 使用多 webhook 客户端
+			results := h.multiWebhookClient.Send(msg)
+			for _, result := range results {
+				if result.Success {
+					log.Printf("Webhook [%s] 推送成功", result.Name)
+				} else {
+					log.Printf("Webhook [%s] 推送失败: %v", result.Name, result.Error)
+				}
+			}
+		} else if h.webhookClient != nil {
+			// 使用单个 webhook 客户端（向后兼容）
+			if err := h.webhookClient.Send(msg); err != nil {
+				log.Printf("Webhook 推送失败: %v", err)
+			}
+		}
+	}()
+
+	return err // 返回 Telegram 推送的结果
 } 

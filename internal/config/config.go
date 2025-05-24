@@ -22,11 +22,12 @@ type Config struct {
         AdminUsers  []string `yaml:"adminuser,omitempty"`  // 管理员用户ID列表
     } `yaml:"telegram"`
     Webhook struct {
-        Enabled    bool   `yaml:"enabled"`      // 是否启用 webhook 推送
-        URL        string `yaml:"url"`          // webhook 地址
-        Timeout    int    `yaml:"timeout"`      // 请求超时时间（秒）
-        RetryCount int    `yaml:"retry_count"`  // 失败重试次数
+        Enabled    bool   `yaml:"enabled"`      // 是否启用 webhook 推送（向后兼容）
+        URL        string `yaml:"url"`          // webhook 地址（向后兼容）
+        Timeout    int    `yaml:"timeout"`      // 请求超时时间（秒）（向后兼容）
+        RetryCount int    `yaml:"retry_count"`  // 失败重试次数（向后兼容）
     } `yaml:"webhook"`
+    Webhooks []WebhookEntry `yaml:"webhooks,omitempty"` // 多个 webhook 配置
     RSS []RSSEntry `yaml:"rss"`
 }
 
@@ -38,6 +39,15 @@ type RSSEntry struct {
     Keywords       []string `yaml:"keywords"`           // 关键词列表
     Group          string   `yaml:"group"`              // 分组名称
     AllowPartMatch bool     `yaml:"allow_part_match"`   // 是否允许部分匹配
+}
+
+// WebhookEntry 定义单个 webhook 配置项
+type WebhookEntry struct {
+    Name       string `yaml:"name"`         // webhook 名称
+    Enabled    bool   `yaml:"enabled"`      // 是否启用此 webhook
+    URL        string `yaml:"url"`          // webhook 地址
+    Timeout    int    `yaml:"timeout"`      // 请求超时时间（秒）
+    RetryCount int    `yaml:"retry_count"`  // 失败重试次数
 }
 
 // UnmarshalYAML 实现自定义的YAML解析逻辑，支持新旧两种格式
@@ -99,6 +109,19 @@ func (c *Config) Equal(other *Config) bool {
        c.Webhook.Timeout != other.Webhook.Timeout ||
        c.Webhook.RetryCount != other.Webhook.RetryCount {
         return false
+    }
+    // 检查 webhooks 配置
+    if len(c.Webhooks) != len(other.Webhooks) {
+        return false
+    }
+    for i := range c.Webhooks {
+        if c.Webhooks[i].Name != other.Webhooks[i].Name ||
+           c.Webhooks[i].Enabled != other.Webhooks[i].Enabled ||
+           c.Webhooks[i].URL != other.Webhooks[i].URL ||
+           c.Webhooks[i].Timeout != other.Webhooks[i].Timeout ||
+           c.Webhooks[i].RetryCount != other.Webhooks[i].RetryCount {
+            return false
+        }
     }
     if len(c.RSS) != len(other.RSS) {
         return false
@@ -221,6 +244,58 @@ func Load(path string) (*Config, error) {
         // 设置默认重试次数
         if config.Webhook.RetryCount == 0 {
             config.Webhook.RetryCount = 3
+        }
+    }
+
+    // 检查并补充多个 Webhooks 配置
+    if len(config.Webhooks) == 0 {
+        // 扫描环境变量，查找 WEBHOOK_URL_1, WEBHOOK_URL_2 等
+        webhookEntries := make([]WebhookEntry, 0)
+        
+        for i := 1; i <= 10; i++ { // 最多支持10个webhook
+            urlEnvKey := fmt.Sprintf("WEBHOOK_URL_%d", i)
+            if webhookURL := os.Getenv(urlEnvKey); webhookURL != "" {
+                entry := WebhookEntry{
+                    Name:       fmt.Sprintf("webhook-%d", i),
+                    Enabled:    true,
+                    URL:        webhookURL,
+                    Timeout:    10, // 默认10秒
+                    RetryCount: 3,  // 默认重试3次
+                }
+                
+                // 加载对应的名称
+                if name := os.Getenv(fmt.Sprintf("WEBHOOK_NAME_%d", i)); name != "" {
+                    entry.Name = name
+                }
+                
+                // 加载对应的启用状态
+                if enabled := os.Getenv(fmt.Sprintf("WEBHOOK_ENABLED_%d", i)); enabled != "" {
+                    if enabled == "false" || enabled == "0" {
+                        entry.Enabled = false
+                    }
+                }
+                
+                // 加载对应的超时时间
+                if timeout := os.Getenv(fmt.Sprintf("WEBHOOK_TIMEOUT_%d", i)); timeout != "" {
+                    if parsedTimeout, err := strconv.Atoi(timeout); err == nil && parsedTimeout > 0 {
+                        entry.Timeout = parsedTimeout
+                    }
+                }
+                
+                // 加载对应的重试次数
+                if retryCount := os.Getenv(fmt.Sprintf("WEBHOOK_RETRY_COUNT_%d", i)); retryCount != "" {
+                    if parsedRetryCount, err := strconv.Atoi(retryCount); err == nil && parsedRetryCount >= 0 {
+                        entry.RetryCount = parsedRetryCount
+                    }
+                }
+                
+                webhookEntries = append(webhookEntries, entry)
+            }
+        }
+        
+        if len(webhookEntries) > 0 {
+            config.Webhooks = webhookEntries
+            configChanged = true
         }
     }
 
@@ -435,6 +510,54 @@ func LoadFromEnv() *Config {
     // 设置默认重试次数
     if config.Webhook.RetryCount == 0 {
         config.Webhook.RetryCount = 3
+    }
+
+    // 加载多个 Webhooks 配置
+    webhookEntries := make([]WebhookEntry, 0)
+    
+    for i := 1; i <= 10; i++ { // 最多支持10个webhook
+        urlEnvKey := fmt.Sprintf("WEBHOOK_URL_%d", i)
+        if webhookURL := os.Getenv(urlEnvKey); webhookURL != "" {
+            entry := WebhookEntry{
+                Name:       fmt.Sprintf("webhook-%d", i),
+                Enabled:    true,
+                URL:        webhookURL,
+                Timeout:    10, // 默认10秒
+                RetryCount: 3,  // 默认重试3次
+            }
+            
+            // 加载对应的名称
+            if name := os.Getenv(fmt.Sprintf("WEBHOOK_NAME_%d", i)); name != "" {
+                entry.Name = name
+            }
+            
+            // 加载对应的启用状态
+            if enabled := os.Getenv(fmt.Sprintf("WEBHOOK_ENABLED_%d", i)); enabled != "" {
+                if enabled == "false" || enabled == "0" {
+                    entry.Enabled = false
+                }
+            }
+            
+            // 加载对应的超时时间
+            if timeout := os.Getenv(fmt.Sprintf("WEBHOOK_TIMEOUT_%d", i)); timeout != "" {
+                if parsedTimeout, err := strconv.Atoi(timeout); err == nil && parsedTimeout > 0 {
+                    entry.Timeout = parsedTimeout
+                }
+            }
+            
+            // 加载对应的重试次数
+            if retryCount := os.Getenv(fmt.Sprintf("WEBHOOK_RETRY_COUNT_%d", i)); retryCount != "" {
+                if parsedRetryCount, err := strconv.Atoi(retryCount); err == nil && parsedRetryCount >= 0 {
+                    entry.RetryCount = parsedRetryCount
+                }
+            }
+            
+            webhookEntries = append(webhookEntries, entry)
+        }
+    }
+    
+    if len(webhookEntries) > 0 {
+        config.Webhooks = webhookEntries
     }
 
     // 加载RSS配置 - 优先使用新格式RSS_URLS_1, RSS_URLS_2等

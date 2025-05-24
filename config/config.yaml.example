@@ -10,12 +10,30 @@ telegram:
   adminuser:
     - "123456789"  # 管理员用户ID列表（可选）
 
-# Webhook 配置（可选）
+# 单个 Webhook 配置（向后兼容）
 webhook:
   enabled: false  # 是否启用 webhook 推送
   url: "http://your-message-pusher-domain:3000/webhook/your_webhook_id"  # webhook 地址
   timeout: 10     # 请求超时时间（秒）
   retry_count: 3  # 失败重试次数
+
+# 多个 Webhooks 配置（推荐使用）
+webhooks:
+  - name: "message-pusher-1"
+    enabled: true
+    url: "http://server1:3000/webhook/webhook_id_1"
+    timeout: 10
+    retry_count: 3
+  - name: "message-pusher-2"
+    enabled: true
+    url: "http://server2:3000/webhook/webhook_id_2"
+    timeout: 15
+    retry_count: 2
+  - name: "backup-webhook"
+    enabled: false  # 可以暂时禁用某个 webhook
+    url: "http://backup:3000/webhook/backup_id"
+    timeout: 5
+    retry_count: 1
 
 # 注意：message-pusher webhook 配置说明
 # 1. 提取规则应配置为：
@@ -30,7 +48,7 @@ webhook:
 #    }
 # 2. 构建规则只能使用 content 和 description 字段，推荐：
 #    {
-#      "content": "### 📰 【$group】RSS推送\n\n**标题：** $title\n\n**链接：** $url\n\n**关键词：** $keywords\n\n**时间：** $timestamp"
+#      "content": "### 📰 【$group】RSS推送\n\n**标题：** $title\n\n$url\n\n**关键词：** $keywords\n\n**时间：** $timestamp"
 #    }
 
 # RSS 订阅配置

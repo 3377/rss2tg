@@ -47,27 +47,55 @@ func NewApp(cfg *config.Config, db *storage.Storage, stats *stats.Stats) (*App, 
         db:         db,
     }
 
-    // 创建 webhook 客户端
-    webhookClient := webhook.NewClient(
-        cfg.Webhook.URL,
-        cfg.Webhook.Timeout,
-        cfg.Webhook.RetryCount,
-        cfg.Webhook.Enabled,
-    )
+    var enhancedHandler *enhancer.EnhancedMessageHandler
 
-    // 创建增强的消息处理器
-    enhancedHandler := enhancer.NewEnhancedMessageHandler(app.handleMessage, webhookClient)
+    // 优先使用多 webhook 配置
+    if len(cfg.Webhooks) > 0 {
+        // 创建多 webhook 客户端
+        webhookClients := make([]webhook.WebhookClient, 0)
+        for _, webhookCfg := range cfg.Webhooks {
+            if webhookCfg.Enabled && webhookCfg.URL != "" {
+                webhookClients = append(webhookClients, webhook.WebhookClient{
+                    Name:       webhookCfg.Name,
+                    URL:        webhookCfg.URL,
+                    Timeout:    time.Duration(webhookCfg.Timeout) * time.Second,
+                    RetryCount: webhookCfg.RetryCount,
+                    Enabled:    webhookCfg.Enabled,
+                })
+            }
+        }
+
+        if len(webhookClients) > 0 {
+            multiWebhookClient := webhook.NewMultiClient(webhookClients)
+            enhancedHandler = enhancer.NewEnhancedMultiMessageHandler(app.handleMessage, multiWebhookClient)
+            
+            log.Printf("多 Webhook 推送已启用，共 %d 个 webhook:", len(webhookClients))
+            for _, client := range webhookClients {
+                log.Printf("  - %s: %s", client.Name, client.URL)
+            }
+        } else {
+            enhancedHandler = enhancer.NewEnhancedMessageHandler(app.handleMessage, nil)
+            log.Println("所有 Webhook 均未启用或配置无效")
+        }
+    } else if cfg.Webhook.Enabled && cfg.Webhook.URL != "" {
+        // 向后兼容：使用单个 webhook 配置
+        webhookClient := webhook.NewClient(
+            cfg.Webhook.URL,
+            cfg.Webhook.Timeout,
+            cfg.Webhook.RetryCount,
+            cfg.Webhook.Enabled,
+        )
+        enhancedHandler = enhancer.NewEnhancedMessageHandler(app.handleMessage, webhookClient)
+        log.Printf("单个 Webhook 推送已启用: %s", cfg.Webhook.URL)
+    } else {
+        // 没有启用任何 webhook
+        enhancedHandler = enhancer.NewEnhancedMessageHandler(app.handleMessage, nil)
+        log.Println("Webhook 推送未启用")
+    }
 
     bot.SetMessageHandler(enhancedHandler.HandleMessage)
     bot.SetUpdateRSSHandler(app.updateRSS)
     rssManager.SetMessageHandler(enhancedHandler.HandleMessage)
-
-    // 打印 webhook 配置状态
-    if cfg.Webhook.Enabled {
-        log.Printf("Webhook 推送已启用: %s", cfg.Webhook.URL)
-    } else {
-        log.Println("Webhook 推送未启用")
-    }
 
     return app, nil
 }

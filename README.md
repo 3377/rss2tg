@@ -286,23 +286,81 @@ Bot 支持以下命令：
 在当前 config 目录下新建 config.ymal，填入以下内容。
 
 ```yaml
+# Telegram 配置
+telegram:
+  bot_token: "your_telegram_bot_token"
+  users:
+    - "123456789"
+  channels:
+    - "@your_channel"
+  adminuser:
+    - "123456789"
+
+# 单个 Webhook 配置（向后兼容）
+webhook:
+  enabled: false
+  url: "http://your-message-pusher:3000/webhook/your_webhook_id"
+  timeout: 10
+  retry_count: 3
+
+# 多个 Webhooks 配置（推荐使用）
+webhooks:
+  - name: "message-pusher-1"
+    enabled: true
+    url: "http://server1:3000/webhook/webhook_id_1"
+    timeout: 10
+    retry_count: 3
+  - name: "message-pusher-2"
+    enabled: true
+    url: "http://server2:3000/webhook/webhook_id_2"
+    timeout: 15
+    retry_count: 2
+  - name: "backup-webhook"
+    enabled: false  # 可以暂时禁用某个 webhook
+    url: "http://backup:3000/webhook/backup_id"
+    timeout: 5
+    retry_count: 1
+
+# RSS 订阅配置
 rss:
-  - url: https://rss.nodeseek.com
+  - urls:
+      - "https://rss.nodeseek.com"
     interval: 30
     keywords:
-      - vps
-      - 甲骨文
-      - 免费
-    group: NS论坛
-  - url: https://linux.do/latest.rss
+      - "vps"
+      - "甲骨文"
+      - "免费"
+    group: "NS论坛"
+    allow_part_match: true
+  - urls:
+      - "https://linux.do/latest.rss"
     interval: 30
     keywords:
-      - vps
-      - 甲骨文
-      - 免费
-      - 龟壳
-    group: LC论坛
+      - "vps"
+      - "甲骨文"
+      - "免费"
+      - "龟壳"
+    group: "LC论坛"
+    allow_part_match: true
 ```
+
+**配置说明：**
+
+1. **Webhook 配置优先级**：
+   - 如果配置了 `webhooks` 数组，将优先使用多 webhook 配置
+   - 如果只配置了 `webhook`，将使用单个 webhook 配置（向后兼容）
+   - 如果都没有配置或都未启用，则只进行 Telegram 推送
+
+2. **多 Webhook 特性**：
+   - 支持同时推送到多个 webhook 地址
+   - 每个 webhook 可以有独立的名称、超时时间和重试次数
+   - 可以单独启用/禁用某个 webhook
+   - 所有 webhook 推送都是并发进行的，不会相互影响
+
+3. **消息格式优化**：
+   - 改进了链接预览格式，链接单独放在一行
+   - 使用更清晰的 Markdown 格式
+   - 更好地支持 message-pusher 的链接预览功能
 
 **_两种方式都可以，系统会每 1 分钟自动检测，即使动态更改生效。_**
 
@@ -489,25 +547,83 @@ The Bot supports the following commands：
 Create a new config in the current config directory.ymal, fill in the following.
 
 ```yaml
+# Telegram 配置
+telegram:
+  bot_token: "your_telegram_bot_token"
+  users:
+    - "123456789"
+  channels:
+    - "@your_channel"
+  adminuser:
+    - "123456789"
+
+# 单个 Webhook 配置（向后兼容）
+webhook:
+  enabled: false
+  url: "http://your-message-pusher:3000/webhook/your_webhook_id"
+  timeout: 10
+  retry_count: 3
+
+# 多个 Webhooks 配置（推荐使用）
+webhooks:
+  - name: "message-pusher-1"
+    enabled: true
+    url: "http://server1:3000/webhook/webhook_id_1"
+    timeout: 10
+    retry_count: 3
+  - name: "message-pusher-2"
+    enabled: true
+    url: "http://server2:3000/webhook/webhook_id_2"
+    timeout: 15
+    retry_count: 2
+  - name: "backup-webhook"
+    enabled: false  # 可以暂时禁用某个 webhook
+    url: "http://backup:3000/webhook/backup_id"
+    timeout: 5
+    retry_count: 1
+
+# RSS 订阅配置
 rss:
-- url: https://rss.nodeseek.com
-  interval: 30
-  keywords:
-  - vps
-  -Oracle
-  -Free
-  group: NS Forum
-- url: https://linux.do/latest.rss
-  interval: 30
-  keywords:
-  - vps
-  -Oracle
-  -Free
-  -Turtle shell
-  group: LC Forum
+  - urls:
+      - "https://rss.nodeseek.com"
+    interval: 30
+    keywords:
+      - "vps"
+      - "甲骨文"
+      - "免费"
+    group: "NS论坛"
+    allow_part_match: true
+  - urls:
+      - "https://linux.do/latest.rss"
+    interval: 30
+    keywords:
+      - "vps"
+      - "甲骨文"
+      - "免费"
+      - "龟壳"
+    group: "LC论坛"
+    allow_part_match: true
 ```
 
-**_Both methods are possible, the system will automatically detect every 1 minute, even if the dynamic changes take effect._**
+**配置说明：**
+
+1. **Webhook 配置优先级**：
+   - 如果配置了 `webhooks` 数组，将优先使用多 webhook 配置
+   - 如果只配置了 `webhook`，将使用单个 webhook 配置（向后兼容）
+   - 如果都没有配置或都未启用，则只进行 Telegram 推送
+
+2. **多 Webhook 特性**：
+   - 支持同时推送到多个 webhook 地址
+   - 每个 webhook 可以有独立的名称、超时时间和重试次数
+   - 可以单独启用/禁用某个 webhook
+   - 所有 webhook 推送都是并发进行的，不会相互影响
+
+3. **消息格式优化**：
+   - 改进了链接预览格式，链接单独放在一行
+   - 使用更清晰的 Markdown 格式
+   - 更好地支持 message-pusher 的链接预览功能
+
+**_两种方式都可以，系统会每 1 分钟自动检测，即使动态更改生效。_**
 
 ### 2.4 Edit RSS feed
 
@@ -621,6 +737,14 @@ If you use `http://fyapi.deno.dev/telegram` as a proxy, typically no additional 
 - 📢 Discord 推送
 - 以及更多平台...
 
+## 新特性
+
+✅ **多 Webhook 支持**：可以同时配置多个 webhook 地址，实现多平台并发推送  
+✅ **向后兼容**：完全兼容原有的单个 webhook 配置  
+✅ **优化链接预览**：改进消息格式，更好地支持链接预览功能  
+✅ **独立配置**：每个 webhook 可以有独立的超时时间和重试次数  
+✅ **灵活控制**：可以单独启用/禁用某个 webhook
+
 # 快速开始
 
 ### 环境变量配置
@@ -639,13 +763,35 @@ RSS_GROUP_1=技术资讯
 RSS_INTERVAL_1=300
 ```
 
-#### Webhook 配置（可选）
+#### 单个 Webhook 配置（向后兼容）
 ```bash
-# 启用 webhook 推送
+# 启用单个 webhook 推送
 WEBHOOK_ENABLED=true
 WEBHOOK_URL=http://your-message-pusher-domain:3000/webhook/your_webhook_id
 WEBHOOK_TIMEOUT=10
 WEBHOOK_RETRY_COUNT=3
+```
+
+#### 多个 Webhooks 配置（推荐）
+```bash
+# 第一个 webhook
+WEBHOOK_URL_1=http://server1:3000/webhook/webhook_id_1
+WEBHOOK_NAME_1=message-pusher-1
+WEBHOOK_ENABLED_1=true
+WEBHOOK_TIMEOUT_1=10
+WEBHOOK_RETRY_COUNT_1=3
+
+# 第二个 webhook
+WEBHOOK_URL_2=http://server2:3000/webhook/webhook_id_2
+WEBHOOK_NAME_2=message-pusher-2
+WEBHOOK_ENABLED_2=true
+WEBHOOK_TIMEOUT_2=15
+WEBHOOK_RETRY_COUNT_2=2
+
+# 第三个 webhook（可选）
+WEBHOOK_URL_3=http://backup:3000/webhook/backup_id
+WEBHOOK_NAME_3=backup-webhook
+WEBHOOK_ENABLED_3=false  # 暂时禁用
 ```
 
 ### Docker 部署
@@ -663,7 +809,7 @@ docker run -d \
   -v /path/to/config:/app/config \
   your-registry/rss2tg:latest
 
-# 完整部署（包含 webhook 推送）
+# 单个 webhook 部署
 docker run -d \
   --name rss2tg \
   -e TELEGRAM_BOT_TOKEN=your_bot_token \
@@ -673,6 +819,22 @@ docker run -d \
   -e RSS_GROUP_1=技术资讯 \
   -e WEBHOOK_ENABLED=true \
   -e WEBHOOK_URL=http://your-message-pusher:3000/webhook/your_webhook_id \
+  -v /path/to/data:/app/data \
+  -v /path/to/config:/app/config \
+  your-registry/rss2tg:latest
+
+# 多个 webhook 部署
+docker run -d \
+  --name rss2tg \
+  -e TELEGRAM_BOT_TOKEN=your_bot_token \
+  -e TELEGRAM_USERS=123456789 \
+  -e RSS_URLS_1=https://example.com/rss \
+  -e RSS_KEYWORDS_1=关键词1,关键词2 \
+  -e RSS_GROUP_1=技术资讯 \
+  -e WEBHOOK_URL_1=http://server1:3000/webhook/webhook_id_1 \
+  -e WEBHOOK_NAME_1=message-pusher-1 \
+  -e WEBHOOK_URL_2=http://server2:3000/webhook/webhook_id_2 \
+  -e WEBHOOK_NAME_2=message-pusher-2 \
   -v /path/to/data:/app/data \
   -v /path/to/config:/app/config \
   your-registry/rss2tg:latest

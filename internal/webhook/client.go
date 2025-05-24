@@ -6,11 +6,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
 // Client webhook 客户端
 type Client struct {
+	URL        string
+	Timeout    time.Duration
+	RetryCount int
+	Enabled    bool
+}
+
+// MultiClient 多 webhook 客户端
+type MultiClient struct {
+	Clients []WebhookClient
+}
+
+// WebhookClient 单个 webhook 客户端配置
+type WebhookClient struct {
+	Name       string
 	URL        string
 	Timeout    time.Duration
 	RetryCount int
@@ -34,6 +49,13 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+// SendResult 发送结果
+type SendResult struct {
+	Name    string
+	Success bool
+	Error   error
+}
+
 // NewClient 创建新的 webhook 客户端
 func NewClient(url string, timeout int, retryCount int, enabled bool) *Client {
 	return &Client{
@@ -41,6 +63,13 @@ func NewClient(url string, timeout int, retryCount int, enabled bool) *Client {
 		Timeout:    time.Duration(timeout) * time.Second,
 		RetryCount: retryCount,
 		Enabled:    enabled,
+	}
+}
+
+// NewMultiClient 创建新的多 webhook 客户端
+func NewMultiClient(clients []WebhookClient) *MultiClient {
+	return &MultiClient{
+		Clients: clients,
 	}
 }
 
@@ -90,4 +119,48 @@ func (c *Client) Send(msg Message) error {
 	}
 
 	return fmt.Errorf("webhook 推送最终失败: %v", lastErr)
+}
+
+// Send 并发发送消息到多个 webhook
+func (mc *MultiClient) Send(msg Message) []SendResult {
+	if len(mc.Clients) == 0 {
+		return []SendResult{}
+	}
+
+	results := make([]SendResult, len(mc.Clients))
+	var wg sync.WaitGroup
+
+	for i, client := range mc.Clients {
+		if !client.Enabled {
+			results[i] = SendResult{
+				Name:    client.Name,
+				Success: false,
+				Error:   fmt.Errorf("webhook 未启用"),
+			}
+			continue
+		}
+
+		wg.Add(1)
+		go func(index int, webhookClient WebhookClient) {
+			defer wg.Done()
+
+			// 创建单个客户端
+			singleClient := &Client{
+				URL:        webhookClient.URL,
+				Timeout:    webhookClient.Timeout,
+				RetryCount: webhookClient.RetryCount,
+				Enabled:    webhookClient.Enabled,
+			}
+
+			err := singleClient.Send(msg)
+			results[index] = SendResult{
+				Name:    webhookClient.Name,
+				Success: err == nil,
+				Error:   err,
+			}
+		}(i, client)
+	}
+
+	wg.Wait()
+	return results
 } 

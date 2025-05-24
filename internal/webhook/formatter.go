@@ -34,9 +34,12 @@ func (f *Formatter) FormatMessage(title, url, group string, pubDate time.Time, m
 	}
 	description += fmt.Sprintf(" | 时间: %s", timestamp)
 
-	// 生成完整内容（Markdown格式）
-	content := fmt.Sprintf("📰 **%s**\n\n", title)
-	content += fmt.Sprintf("🌐 **链接:** %s\n\n", url)
+	// 生成完整内容（优化链接预览格式）
+	content := fmt.Sprintf("### 📰 【%s】RSS推送\n\n", group)
+	content += fmt.Sprintf("**标题：** %s\n\n", title)
+	
+	// 将链接单独放在一行，便于预览
+	content += fmt.Sprintf("%s\n\n", url)
 	
 	if keywords != "" {
 		// 为关键词添加标签格式
@@ -44,11 +47,10 @@ func (f *Formatter) FormatMessage(title, url, group string, pubDate time.Time, m
 		for i, keyword := range matchedKeywords {
 			keywordTags[i] = fmt.Sprintf("#%s", keyword)
 		}
-		content += fmt.Sprintf("🔍 **关键词:** %s\n\n", strings.Join(keywordTags, " "))
+		content += fmt.Sprintf("**关键词：** %s\n\n", strings.Join(keywordTags, " "))
 	}
 	
-	content += fmt.Sprintf("🏷️ **分组:** %s\n\n", group)
-	content += fmt.Sprintf("🕒 **时间:** %s", timestamp)
+	content += fmt.Sprintf("**时间：** %s", timestamp)
 
 	return Message{
 		Title:       title,
