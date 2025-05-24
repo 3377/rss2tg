@@ -21,6 +21,12 @@ type Config struct {
         Channels    []string `yaml:"channels"`
         AdminUsers  []string `yaml:"adminuser,omitempty"`  // 管理员用户ID列表
     } `yaml:"telegram"`
+    Webhook struct {
+        Enabled    bool   `yaml:"enabled"`      // 是否启用 webhook 推送
+        URL        string `yaml:"url"`          // webhook 地址
+        Timeout    int    `yaml:"timeout"`      // 请求超时时间（秒）
+        RetryCount int    `yaml:"retry_count"`  // 失败重试次数
+    } `yaml:"webhook"`
     RSS []RSSEntry `yaml:"rss"`
 }
 
@@ -85,6 +91,13 @@ func (c *Config) Equal(other *Config) bool {
         return false
     }
     if !stringSliceEqual(c.Telegram.Channels, other.Telegram.Channels) {
+        return false
+    }
+    // 检查 webhook 配置
+    if c.Webhook.Enabled != other.Webhook.Enabled ||
+       c.Webhook.URL != other.Webhook.URL ||
+       c.Webhook.Timeout != other.Webhook.Timeout ||
+       c.Webhook.RetryCount != other.Webhook.RetryCount {
         return false
     }
     if len(c.RSS) != len(other.RSS) {
@@ -165,6 +178,49 @@ func Load(path string) (*Config, error) {
         if adminUsers := os.Getenv("TELEGRAM_ADMIN_USERS"); adminUsers != "" {
             config.Telegram.AdminUsers = strings.Split(adminUsers, ",")
             configChanged = true
+        }
+    }
+
+    // 检查并补充 Webhook 配置
+    if config.Webhook.URL == "" {
+        if webhookURL := os.Getenv("WEBHOOK_URL"); webhookURL != "" {
+            config.Webhook.URL = webhookURL
+            configChanged = true
+        }
+    }
+    
+    if !config.Webhook.Enabled {
+        if webhookEnabled := os.Getenv("WEBHOOK_ENABLED"); webhookEnabled != "" {
+            if webhookEnabled == "true" || webhookEnabled == "1" {
+                config.Webhook.Enabled = true
+                configChanged = true
+            }
+        }
+    }
+    
+    if config.Webhook.Timeout == 0 {
+        if webhookTimeout := os.Getenv("WEBHOOK_TIMEOUT"); webhookTimeout != "" {
+            if timeout, err := strconv.Atoi(webhookTimeout); err == nil && timeout > 0 {
+                config.Webhook.Timeout = timeout
+                configChanged = true
+            }
+        }
+        // 设置默认超时时间
+        if config.Webhook.Timeout == 0 {
+            config.Webhook.Timeout = 10
+        }
+    }
+    
+    if config.Webhook.RetryCount == 0 {
+        if webhookRetryCount := os.Getenv("WEBHOOK_RETRY_COUNT"); webhookRetryCount != "" {
+            if retryCount, err := strconv.Atoi(webhookRetryCount); err == nil && retryCount >= 0 {
+                config.Webhook.RetryCount = retryCount
+                configChanged = true
+            }
+        }
+        // 设置默认重试次数
+        if config.Webhook.RetryCount == 0 {
+            config.Webhook.RetryCount = 3
         }
     }
 

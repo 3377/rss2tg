@@ -7,9 +7,11 @@ import (
 
     "rss2tg/internal/bot"
     "rss2tg/internal/config"
+    "rss2tg/internal/enhancer"
     "rss2tg/internal/rss"
     "rss2tg/internal/storage"
     "rss2tg/internal/stats"
+    "rss2tg/internal/webhook"
 )
 
 type App struct {
@@ -45,9 +47,27 @@ func NewApp(cfg *config.Config, db *storage.Storage, stats *stats.Stats) (*App, 
         db:         db,
     }
 
-    bot.SetMessageHandler(app.handleMessage)
+    // 创建 webhook 客户端
+    webhookClient := webhook.NewClient(
+        cfg.Webhook.URL,
+        cfg.Webhook.Timeout,
+        cfg.Webhook.RetryCount,
+        cfg.Webhook.Enabled,
+    )
+
+    // 创建增强的消息处理器
+    enhancedHandler := enhancer.NewEnhancedMessageHandler(app.handleMessage, webhookClient)
+
+    bot.SetMessageHandler(enhancedHandler.HandleMessage)
     bot.SetUpdateRSSHandler(app.updateRSS)
-    rssManager.SetMessageHandler(app.handleMessage)
+    rssManager.SetMessageHandler(enhancedHandler.HandleMessage)
+
+    // 打印 webhook 配置状态
+    if cfg.Webhook.Enabled {
+        log.Printf("Webhook 推送已启用: %s", cfg.Webhook.URL)
+    } else {
+        log.Println("Webhook 推送未启用")
+    }
 
     return app, nil
 }
@@ -123,6 +143,10 @@ func main() {
 
     // 打印加载的配置（注意不要打印敏感信息如 bot token）
     log.Printf("加载的配置: Users: %v, Channels: %v", cfg.Telegram.Users, cfg.Telegram.Channels)
+    if cfg.Webhook.Enabled {
+        log.Printf("Webhook 配置: URL: %s, Timeout: %ds, RetryCount: %d", 
+            cfg.Webhook.URL, cfg.Webhook.Timeout, cfg.Webhook.RetryCount)
+    }
 
     db := storage.NewStorage("/app/data/sent_items.txt")
     stats, err := stats.NewStats("/app/data/stats.yaml")

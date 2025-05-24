@@ -608,3 +608,217 @@ When deploying RSS2TG bot on servers in mainland China, due to network restricti
 - Additional configuration may be required depending on the proxy service's requirements
 
 If you use `http://fyapi.deno.dev/telegram` as a proxy, typically no additional configuration is needed.
+
+# 新增功能：Webhook 集成
+
+现在支持通过 webhook 将消息推送到 [message-pusher](https://github.com/songquanpeng/message-pusher)，实现多平台消息推送：
+
+- 📧 邮件推送
+- 💬 企业微信推送
+- 📱 钉钉推送
+- 🔔 飞书推送
+- 🎯 Bark 推送
+- 📢 Discord 推送
+- 以及更多平台...
+
+# 快速开始
+
+### 环境变量配置
+
+#### 基础配置（必需）
+```bash
+# Telegram 配置
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_USERS=123456789,987654321
+TELEGRAM_CHANNELS=@your_channel
+
+# RSS 配置
+RSS_URLS_1=https://example.com/rss
+RSS_KEYWORDS_1=关键词1,关键词2
+RSS_GROUP_1=技术资讯
+RSS_INTERVAL_1=300
+```
+
+#### Webhook 配置（可选）
+```bash
+# 启用 webhook 推送
+WEBHOOK_ENABLED=true
+WEBHOOK_URL=http://your-message-pusher-domain:3000/webhook/your_webhook_id
+WEBHOOK_TIMEOUT=10
+WEBHOOK_RETRY_COUNT=3
+```
+
+### Docker 部署
+
+```bash
+# 基础部署（仅 Telegram 推送）
+docker run -d \
+  --name rss2tg \
+  -e TELEGRAM_BOT_TOKEN=your_bot_token \
+  -e TELEGRAM_USERS=123456789 \
+  -e RSS_URLS_1=https://example.com/rss \
+  -e RSS_KEYWORDS_1=关键词1,关键词2 \
+  -e RSS_GROUP_1=技术资讯 \
+  -v /path/to/data:/app/data \
+  -v /path/to/config:/app/config \
+  your-registry/rss2tg:latest
+
+# 完整部署（包含 webhook 推送）
+docker run -d \
+  --name rss2tg \
+  -e TELEGRAM_BOT_TOKEN=your_bot_token \
+  -e TELEGRAM_USERS=123456789 \
+  -e RSS_URLS_1=https://example.com/rss \
+  -e RSS_KEYWORDS_1=关键词1,关键词2 \
+  -e RSS_GROUP_1=技术资讯 \
+  -e WEBHOOK_ENABLED=true \
+  -e WEBHOOK_URL=http://your-message-pusher:3000/webhook/your_webhook_id \
+  -v /path/to/data:/app/data \
+  -v /path/to/config:/app/config \
+  your-registry/rss2tg:latest
+```
+
+## Webhook 集成配置
+
+### 1. 部署 message-pusher
+
+参考 [message-pusher 官方文档](https://github.com/songquanpeng/message-pusher) 部署服务。
+
+### 2. 在 message-pusher 中创建 webhook
+
+1. 登录 message-pusher 后台
+2. 进入"产品配置" -> "webhook 配置"
+3. 点击"新建 webhook 通道"
+4. 配置提取规则：
+```json
+{
+  "title": "title",
+  "description": "description", 
+  "content": "content",
+  "url": "url",
+  "group": "group",
+  "keywords": "keywords",
+  "timestamp": "timestamp"
+}
+```
+5. 配置构建规则：
+```json
+{
+  "content": "### 【$group】RSS推送\n\n**标题：** $title\n\n**内容：** $content\n\n**关键词：** $keywords\n\n**链接：** [$url]($url)\n\n**时间：** $timestamp"
+}
+```
+6. 复制生成的 webhook URL
+
+### 3. 配置 rss2tg
+
+将获取的 webhook URL 配置到 rss2tg：
+
+**方式一：环境变量**
+```bash
+WEBHOOK_ENABLED=true
+WEBHOOK_URL=http://your-message-pusher:3000/webhook/your_webhook_id
+```
+
+**方式二：配置文件**
+```yaml
+webhook:
+  enabled: true
+  url: "http://your-message-pusher:3000/webhook/your_webhook_id"
+  timeout: 10
+  retry_count: 3
+```
+
+## 配置文件
+
+详细配置请参考 `config/config.yaml.example`：
+
+```yaml
+telegram:
+  bot_token: "your_telegram_bot_token"
+  users:
+    - "123456789"
+  channels:
+    - "@your_channel"
+
+webhook:
+  enabled: true
+  url: "http://your-message-pusher:3000/webhook/your_webhook_id"
+  timeout: 10
+  retry_count: 3
+
+rss:
+  - urls:
+      - "https://example.com/rss"
+    interval: 300
+    keywords:
+      - "关键词1"
+      - "关键词2"
+    group: "技术资讯"
+    allow_part_match: true
+```
+
+## 消息格式
+
+### Telegram 消息格式（保持不变）
+```
+📰 **文章标题**
+
+🌐 **链接:** https://example.com/article
+
+🔍 **关键词:** #关键词1 #关键词2
+
+🏷️ **分组:** 技术资讯
+
+🕒 **时间:** 2024-01-20 15:30:45
+```
+
+### Webhook 消息格式
+发送到 message-pusher 的数据格式：
+```json
+{
+  "title": "文章标题",
+  "description": "分组: 技术资讯 | 关键词: 关键词1, 关键词2 | 时间: 2024-01-20 15:30:45",
+  "content": "📰 **文章标题**\n\n🌐 **链接:** https://example.com/article\n\n🔍 **关键词:** #关键词1 #关键词2\n\n🏷️ **分组:** 技术资讯\n\n🕒 **时间:** 2024-01-20 15:30:45",
+  "url": "https://example.com/article",
+  "group": "技术资讯",
+  "keywords": "关键词1, 关键词2",
+  "timestamp": "2024-01-20 15:30:45"
+}
+```
+
+## 管理员命令
+
+- `/start` - 查看帮助信息
+- `/config` - 查看当前配置
+- `/list` - 列出所有RSS订阅
+- `/stats` - 查看推送统计
+- `/add` - 添加RSS订阅
+- `/edit` - 编辑RSS订阅
+- `/delete` - 删除RSS订阅
+
+## 故障排除
+
+### Webhook 推送失败
+1. 检查 webhook URL 是否正确
+2. 确认 message-pusher 服务是否正常运行
+3. 查看日志中的错误信息：
+```bash
+docker logs rss2tg
+```
+
+### 配置不生效
+1. 检查环境变量是否正确设置
+2. 确认配置文件格式是否正确
+3. 重启容器使配置生效
+
+## 技术特性
+
+- ✅ **零侵入性**：完全不影响现有 Telegram 推送功能
+- ✅ **异步推送**：webhook 推送失败不影响 Telegram 推送
+- ✅ **自动重试**：支持配置重试次数和超时时间
+- ✅ **热重载**：支持配置文件和环境变量热重载
+- ✅ **统一格式**：所有平台接收相同格式的消息内容
+
+## 许可证
+
+MIT License

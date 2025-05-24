@@ -1,0 +1,38 @@
+# RSS 到 Telegram 机器人配置文件示例
+
+# Telegram 配置
+telegram:
+  bot_token: "your_telegram_bot_token"
+  users:
+    - "123456789"  # 用户ID列表
+  channels:
+    - "@your_channel"  # 频道列表（可选）
+  adminuser:
+    - "123456789"  # 管理员用户ID列表（可选）
+
+# Webhook 配置（可选）
+webhook:
+  enabled: false  # 是否启用 webhook 推送
+  url: "http://your-message-pusher-domain:3000/webhook/your_webhook_id"  # webhook 地址
+  timeout: 10     # 请求超时时间（秒）
+  retry_count: 3  # 失败重试次数
+
+# RSS 订阅配置
+rss:
+  - urls:
+      - "https://example.com/rss"
+      - "https://example2.com/feed"
+    interval: 300  # 检查间隔（秒）
+    keywords:
+      - "关键词1"
+      - "关键词2"
+    group: "技术资讯"
+    allow_part_match: true  # 是否允许部分匹配
+
+  - urls:
+      - "https://news.example.com/rss"
+    interval: 600
+    keywords:
+      - "新闻"
+    group: "新闻资讯"
+    allow_part_match: false 
