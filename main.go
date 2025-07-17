@@ -113,6 +113,7 @@ func (app *App) updateRSS() {
             Keywords:       rssCfg.Keywords,
             Group:          rssCfg.Group,
             AllowPartMatch: rssCfg.AllowPartMatch,
+            Enabled:        rssCfg.Enabled,
         }
     }
     app.rssManager.UpdateFeeds(rssConfigs)

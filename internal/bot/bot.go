@@ -116,6 +116,8 @@ func (b *Bot) Start() {
                 b.handleEdit(chatID, userID)
             case "delete":
                 b.handleDelete(chatID, userID)
+            case "toggle":
+                b.handleToggle(chatID, userID)
             case "add_all":
                 b.handleAddAll(chatID, userID)
             case "del_all":
@@ -352,9 +354,10 @@ func (b *Bot) handleEditCommand(chatID int64, userID int64) {
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("❌ 删除RSS订阅", "delete"),
-            tgbotapi.NewInlineKeyboardButtonData("📝 添加全局关键词", "add_all"),
+            tgbotapi.NewInlineKeyboardButtonData("🔄 订阅开关", "toggle"),
         ),
         tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📝 添加全局关键词", "add_all"),
             tgbotapi.NewInlineKeyboardButtonData("🗑️ 删除全局关键词", "del_all"),
         ),
     )
@@ -425,6 +428,43 @@ func (b *Bot) handleDelete(chatID int64, userID int64) {
     b.userState[userID] = "delete"
     message := b.listSubscriptions()
     message += "\n请输入要删除的RSS订阅编号："
+    
+    msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(message))
+    msg.ParseMode = "MarkdownV2"
+    if _, err := b.api.Send(msg); err != nil {
+        log.Printf("发送消息失败: %v", err)
+    }
+}
+
+func (b *Bot) handleToggle(chatID int64, userID int64) {
+    if !b.isAdmin(userID) {
+        b.sendMessage(chatID, "您不是系统管理员，无法操作")
+        return
+    }
+    b.userState[userID] = "toggle_subscription"
+    message := "当前RSS订阅开关状态:\n"
+    for i, rss := range b.config.RSS {
+        statusIcon := "🔴" // 禁用状态
+        statusText := "禁用"
+        if rss.Enabled {
+            statusIcon = "🟢" // 启用状态
+            statusText = "启用"
+        }
+        
+        // 获取第一个URL作为显示标识
+        urlDisplay := "无URL"
+        if len(rss.URLs) > 0 {
+            urlDisplay = rss.URLs[0]
+            // 如果URL太长，截取前50个字符
+            if len(urlDisplay) > 50 {
+                urlDisplay = urlDisplay[:50] + "..."
+            }
+        }
+        
+        message += fmt.Sprintf("%d. %s %s [%s] - %s\n", 
+            i+1, statusIcon, statusText, rss.Group, urlDisplay)
+    }
+    message += "\n请输入要切换状态的RSS订阅编号："
     
     msg := tgbotapi.NewMessage(chatID, escapeMarkdownV2Text(message))
     msg.ParseMode = "MarkdownV2"
@@ -514,6 +554,7 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
         b.config.RSS = append(b.config.RSS, config.RSSEntry{
             URLs:           cleanURLs,
             AllowPartMatch: true,  // 默认允许部分匹配
+            Enabled:        true,  // 默认启用订阅
         })
         b.sendMessage(chatID, "请输入订阅的更新间隔（秒）：")
     case "add_interval":
@@ -796,6 +837,41 @@ func (b *Bot) handleUserInput(message *tgbotapi.Message) {
             b.sendMessage(chatID, fmt.Sprintf("成功删除用户: %d", deletedUser))
         }
         delete(b.userState, userID)
+    case "toggle_subscription":
+        index, err := strconv.Atoi(text)
+        if err != nil || index < 1 || index > len(b.config.RSS) {
+            b.sendMessage(chatID, "无效的编号。请输入正确的RSS订阅编号。")
+            delete(b.userState, userID)
+            return
+        }
+        
+        // 切换启用状态
+        rssIndex := index - 1
+        b.config.RSS[rssIndex].Enabled = !b.config.RSS[rssIndex].Enabled
+        
+        // 保存配置
+        if err := b.config.Save(b.configFile); err != nil {
+            b.sendMessage(chatID, "切换订阅状态成功，但保存配置失败。")
+        } else {
+            statusText := "禁用"
+            if b.config.RSS[rssIndex].Enabled {
+                statusText = "启用"
+            }
+            
+            // 获取第一个URL作为显示标识
+            urlDisplay := "无URL"
+            if len(b.config.RSS[rssIndex].URLs) > 0 {
+                urlDisplay = b.config.RSS[rssIndex].URLs[0]
+                if len(urlDisplay) > 50 {
+                    urlDisplay = urlDisplay[:50] + "..."
+                }
+            }
+            
+            b.sendMessage(chatID, fmt.Sprintf("成功将订阅 [%s] %s 设为 %s", 
+                b.config.RSS[rssIndex].Group, urlDisplay, statusText))
+            b.updateRSSHandler()
+        }
+        delete(b.userState, userID)
     }
 }
 
@@ -805,7 +881,13 @@ func (b *Bot) getConfig() string {
     config += fmt.Sprintf("频道: %v\n", b.channels)
     config += "RSS订阅:\n"
     for i, rss := range b.config.RSS {
-        config += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
+        // 添加启用状态图标
+        statusIcon := "🔴" // 禁用状态
+        if rss.Enabled {
+            statusIcon = "🟢" // 启用状态
+        }
+        
+        config += fmt.Sprintf("%d. %s 📡 URLs:\n", i+1, statusIcon)
         for j, url := range rss.URLs {
             config += fmt.Sprintf("   %d) %s\n", j+1, url)  // 直接显示URL，不进行转义
         }
@@ -815,11 +897,12 @@ func (b *Bot) getConfig() string {
         escapedKeywords := escapeMarkdownV2Text(keywords)
         escapedGroup := escapeMarkdownV2Text(rss.Group)
         
-        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n", 
+        config += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n   📊 状态: %s\n", 
             rss.Interval, 
             escapedKeywords,
             escapedGroup,
-            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)))
+            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)),
+            escapeMarkdownV2Text(b.getEnabledStatus(rss.Enabled)))
     }
     return config
 }
@@ -827,7 +910,13 @@ func (b *Bot) getConfig() string {
 func (b *Bot) listSubscriptions() string {
     list := "当前RSS订阅列表:\n"
     for i, rss := range b.config.RSS {
-        list += fmt.Sprintf("%d. 📡 URLs:\n", i+1)
+        // 添加启用状态图标
+        statusIcon := "🔴" // 禁用状态
+        if rss.Enabled {
+            statusIcon = "🟢" // 启用状态
+        }
+        
+        list += fmt.Sprintf("%d. %s 📡 URLs:\n", i+1, statusIcon)
         for j, url := range rss.URLs {
             list += fmt.Sprintf("   %d) %s\n", j+1, url)  // 直接显示URL，不进行转义
         }
@@ -838,11 +927,12 @@ func (b *Bot) listSubscriptions() string {
         escapedKeywords := escapeMarkdownV2Text(keywords)
         escapedGroup := escapeMarkdownV2Text(rss.Group)
         
-        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n", 
+        list += fmt.Sprintf("   ⏱️ 间隔: %d秒\n   🔑 关键词: %s\n   🏷️ 组名: %s\n   🔍 部分匹配: %s\n   📊 状态: %s\n", 
             rss.Interval, 
             escapedKeywords,
             escapedGroup,
-            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)))
+            escapeMarkdownV2Text(b.getPartMatchStatus(rss.AllowPartMatch)),
+            escapeMarkdownV2Text(b.getEnabledStatus(rss.Enabled)))
     }
     return list
 }
@@ -956,6 +1046,14 @@ func (b *Bot) sendMessage(chatID int64, text string) {
 func (b *Bot) getPartMatchStatus(allowPartMatch bool) string {
     if allowPartMatch {
         return "允许"
+    }
+    return "禁用"
+}
+
+// 辅助函数：获取启用状态的描述
+func (b *Bot) getEnabledStatus(enabled bool) string {
+    if enabled {
+        return "启用"
     }
     return "禁用"
 }

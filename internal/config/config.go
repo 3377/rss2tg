@@ -39,6 +39,7 @@ type RSSEntry struct {
     Keywords       []string `yaml:"keywords"`           // 关键词列表
     Group          string   `yaml:"group"`              // 分组名称
     AllowPartMatch bool     `yaml:"allow_part_match"`   // 是否允许部分匹配
+    Enabled        bool     `yaml:"enabled"`            // 是否启用此订阅
 }
 
 // WebhookEntry 定义单个 webhook 配置项
@@ -60,6 +61,7 @@ func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
         Keywords       []string `yaml:"keywords"`
         Group          string   `yaml:"group"`
         AllowPartMatch *bool    `yaml:"allow_part_match,omitempty"`  // 使用指针类型
+        Enabled        *bool    `yaml:"enabled,omitempty"`          // 使用指针类型
     }
 
     // 解析配置到临时结构体
@@ -88,6 +90,12 @@ func (r *RSSEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
         r.AllowPartMatch = true  // 默认值
     } else {
         r.AllowPartMatch = *temp.AllowPartMatch
+    }
+
+    if temp.Enabled == nil {
+        r.Enabled = true // 默认值
+    } else {
+        r.Enabled = *temp.Enabled
     }
 
     return nil
@@ -313,6 +321,7 @@ func Load(path string) (*Config, error) {
                     Interval:       300, // 默认5分钟
                     Group:          "默认分组",
                     AllowPartMatch: true, // 默认允许部分匹配
+                    Enabled:        true, // 默认启用
                 }
                 
                 // 加载对应的间隔时间
@@ -352,6 +361,13 @@ func Load(path string) (*Config, error) {
                     }
                 }
                 
+                // 加载启用状态
+                if enabled := os.Getenv(fmt.Sprintf("RSS_ENABLED_%d", i)); enabled != "" {
+                    if enabled == "false" || enabled == "0" {
+                        entry.Enabled = false
+                    }
+                }
+                
                 rssEntries = append(rssEntries, entry)
             }
         }
@@ -370,6 +386,7 @@ func Load(path string) (*Config, error) {
                         Interval:       300, // 默认5分钟
                         Group:          "默认分组",
                         AllowPartMatch: true,
+                        Enabled:        true, // 默认启用
                     }
                     
                     // 尝试加载对应的关键词（注意：旧格式使用0开始的索引）
@@ -572,6 +589,7 @@ func LoadFromEnv() *Config {
                 Interval:       300, // 默认5分钟
                 Group:          "默认分组",
                 AllowPartMatch: true, // 默认允许部分匹配
+                Enabled:        true, // 默认启用
             }
             
             // 加载对应的间隔时间
@@ -611,6 +629,13 @@ func LoadFromEnv() *Config {
                 }
             }
             
+            // 加载启用状态
+            if enabled := os.Getenv(fmt.Sprintf("RSS_ENABLED_%d", i)); enabled != "" {
+                if enabled == "false" || enabled == "0" {
+                    entry.Enabled = false
+                }
+            }
+            
             rssEntries = append(rssEntries, entry)
         }
     }
@@ -630,6 +655,7 @@ func LoadFromEnv() *Config {
                     Interval:       300, // 默认5分钟
                     Group:          "默认分组",
                     AllowPartMatch: true,
+                    Enabled:        true, // 默认启用
                 }
                 
                 // 尝试加载对应的关键词（注意：旧格式使用0开始的索引）

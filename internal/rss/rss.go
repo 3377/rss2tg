@@ -27,6 +27,7 @@ type Feed struct {
     Keywords        []string
     Group           string
     AllowPartMatch  bool      // 是否允许部分匹配
+    Enabled         bool      // 是否启用此订阅
     ticker          *time.Ticker
     stopChan        chan struct{}
 }
@@ -37,6 +38,7 @@ type Config struct {
     Keywords        []string
     Group           string
     AllowPartMatch  bool      // 是否允许部分匹配
+    Enabled         bool      // 是否启用此订阅
 }
 
 func NewManager(configs []Config, db *storage.Storage) *Manager {
@@ -71,13 +73,18 @@ func (m *Manager) UpdateFeeds(configs []Config) {
             Keywords:       config.Keywords,
             Group:          config.Group,
             AllowPartMatch: config.AllowPartMatch,  // 添加部分匹配配置
+            Enabled:        config.Enabled,         // 添加启用状态配置
             stopChan:       make(chan struct{}),
         }
     }
 
-    // 启动新的feed轮询器
+    // 启动新的feed轮询器（仅启用的订阅）
     for _, feed := range m.feeds {
-        go m.pollFeed(feed)
+        if feed.Enabled {
+            go m.pollFeed(feed)
+        } else {
+            log.Printf("订阅已禁用，跳过启动轮询器: %v", feed.URLs)
+        }
     }
 }
 
@@ -92,6 +99,10 @@ func (m *Manager) pollFeed(feed *Feed) {
     for {
         select {
         case <-feed.ticker.C:
+            if !feed.Enabled {
+                log.Printf("订阅已禁用，跳过轮询: %v", feed.URLs)
+                continue
+            }
             for _, url := range feed.URLs {
                 m.checkFeed(feed, url)
             }
