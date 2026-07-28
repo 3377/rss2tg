@@ -19,6 +19,7 @@ type Config struct {
         BotToken    string   `yaml:"bot_token"`
         Users       []string `yaml:"users"`
         Channels    []string `yaml:"channels"`
+        APIURL      string   `yaml:"api_url"`
         AdminUsers  []string `yaml:"adminuser,omitempty"`  // 管理员用户ID列表
     } `yaml:"telegram"`
     Webhook struct {
